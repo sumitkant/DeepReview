@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "deep-review-local",
+  "description": "Local marketplace for the deep-review plugin.",
+  "owner": { "name": "local" },
+  "plugins": [
+    {
+      "name": "deep-review",
+      "description": "Multi-stage expert review of dense documents, annotated HTML report, and decision-driven rewrite.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

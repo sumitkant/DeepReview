@@ -1,0 +1,33 @@
+# --- Personal documents: never commit ---
+# The resume, every review of it, and Google's saved page for it
+review1/
+# Pipeline runs on the resume (extracted text, findings and reviews quote it)
+deep-review-kit/output/resume*/
+
+# --- Third-party material ---
+# Cloned separately; has its own repository and licence
+rea/
+# Saved Google Deep Review pages (Google's page code) and comments extracted from them
+review*/review*.html
+**/google_review*
+
+# --- Superseded copies; the current versions are in deep-review-plugin/ ---
+deep-review-kit/ports/
+deep-review-kit/deep_review.py
+deep-review-kit/prompts/
+deep-review-kit/profiles/
+deep-review-kit/tools/
+
+# --- Generated when you use the pipeline on your own documents ---
+review_*/
+review_decisions.json
+*_revised.*
+
+# --- Local tooling ---
+.claude/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

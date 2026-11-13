@@ -1,0 +1,299 @@
+{
+  "segment_id": "copy-consistency",
+  "findings": [
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Grammar and punctuation",
+      "summary": "TL;DR second sentence: missing comma, missing article, doubled \"with\"",
+      "quote": "However we can use some tactics to achieve on-par performance with same compute budget with a few modifications.",
+      "page": 1,
+      "ledger_claims": [],
+      "checks_run": [],
+      "verification": {
+        "action": "Read the sentence in document.txt and in the PDF (page 1, TL;DR card).",
+        "outcome": "The PDF shows the same wording: no comma after \"However\", no article before \"same compute budget\", and two consecutive \"with\" phrases."
+      },
+      "impact": "This is the second sentence a reader sees; three slips in one sentence lower confidence in the care taken over the rest of the post.",
+      "needs_verification": false,
+      "body_markdown": "`However we can use some tactics to achieve on-par performance with same compute budget with a few modifications.` has three slips: a sentence-opening \"However\" needs a comma, \"same compute budget\" needs \"the\", and the two stacked \"with\" phrases read awkwardly. \"On par\" is also not hyphenated when it follows the noun.\n\n**Suggested Improvement:** Recast as below.",
+      "suggested_edit": "However, a few modifications let us achieve performance on par with the baseline on the same compute budget.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.9
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Typo",
+      "summary": "Typo \"modfications\" in the TL;DR",
+      "quote": "These modfications and simple yet powerful exploits to fully utilize the capabilities of modern GPUs can significantly reduce training time.",
+      "page": 1,
+      "ledger_claims": [],
+      "checks_run": [],
+      "verification": {
+        "action": "Checked the word in the PDF (page 1) and compared with \"modifications\" one line above.",
+        "outcome": "The PDF reads \"modfications\"; the preceding sentence spells it \"modifications\"."
+      },
+      "impact": "A misspelling in the opening card is the first thing a proofreading reader notices.",
+      "needs_verification": false,
+      "body_markdown": "`modfications` is missing an \"i\". The subject \"These modifications and simple yet powerful exploits to fully utilize ...\" is also long before the verb arrives; the edit shortens it without changing the meaning.\n\n**Suggested Improvement:** Correct the spelling and tighten the subject.",
+      "suggested_edit": "These modifications are simple yet powerful exploits that fully utilize the capabilities of modern GPUs and can significantly reduce training time.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.95
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Grammar",
+      "summary": "Missing article in \"how GPU works\"",
+      "quote": "Most of it comes down to learning how GPU works.",
+      "page": 1,
+      "ledger_claims": [],
+      "checks_run": [],
+      "verification": {
+        "action": "Read the sentence in the PDF (page 1).",
+        "outcome": "The PDF has the same wording; the singular count noun \"GPU\" has no article."
+      },
+      "impact": "Small grammatical slip in the opening card.",
+      "needs_verification": false,
+      "body_markdown": "`how GPU works` needs an article (or a plural). The post uses \"the GPU\" and \"GPUs\" everywhere else.\n\n**Suggested Improvement:** Add the article.",
+      "suggested_edit": "Most of it comes down to learning how a GPU works.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.95
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Punctuation and capitalisation",
+      "summary": "TL;DR headline sentence: capital \"Model\", missing hyphen, comma and full stop",
+      "quote": "We apply five one-line changes to a 124M parameter GPT-2 Model's training loop and reduce training time per step from 250 ms to 80 ms on a single RTX 5070 making training 3x faster",
+      "page": 1,
+      "ledger_claims": ["K1"],
+      "checks_run": ["F3"],
+      "verification": {
+        "action": "Checked the sentence end in the PDF (page 1) and compared the spelling of \"model\" with the subtitle and the Setup list.",
+        "outcome": "The PDF sentence ends without a full stop and has no comma before \"making\". \"Model\" is capitalised here but lower case in the subtitle (\"124M parameter model\") and elsewhere."
+      },
+      "impact": "This is the highlighted summary of the headline result; it is the sentence most likely to be quoted.",
+      "needs_verification": false,
+      "body_markdown": "Four slips in the highlighted summary sentence: \"Model's\" is capitalised mid-sentence (lower case everywhere else); the compound modifier \"124M parameter\" needs a hyphen (also in the subtitle); a comma is needed before the participle \"making\"; and the sentence has no full stop in the PDF.\n\n**Suggested Improvement:** Use the corrected sentence below.",
+      "suggested_edit": "We apply five one-line changes to a 124M-parameter GPT-2 model's training loop and reduce training time per step from 250 ms to 80 ms on a single RTX 5070, making training 3× faster.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.9
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Wording and consistency",
+      "summary": "Subtitle: numeral at sentence start, misplaced parenthesis, \"single-line\" vs \"one-line\"",
+      "quote": "5 must-use single-line exploits that made the smallest GPT-2 (124M parameter model) train 3x faster on a consumer-grade RTX 5070 GPU.",
+      "page": 1,
+      "ledger_claims": [],
+      "checks_run": ["F3"],
+      "verification": {
+        "action": "Compared the subtitle with the TL;DR on the same page and with the section code captions.",
+        "outcome": "The subtitle has \"5\" and \"single-line exploits\"; the TL;DR has \"five one-line changes\"; code captions have \"one line\". The parenthesis \"(124M parameter model)\" splits \"GPT-2\" from its noun."
+      },
+      "impact": "The same five changes are named three ways within one page, and the subtitle reads as a fragment.",
+      "needs_verification": false,
+      "body_markdown": "The subtitle and the TL;DR describe the same thing in different terms: `5 must-use single-line exploits` against `five one-line changes`. Pick one term (\"one-line changes\" is used most often) and spell out the number at the start of a sentence. The parenthesis is also misplaced: \"the smallest GPT-2 (124M parameter model)\" should attach \"model\" to GPT-2 and keep only the size in brackets.\n\n**Suggested Improvement:** Align the subtitle with the TL;DR.",
+      "suggested_edit": "Five must-use one-line changes that made the smallest GPT-2 model (124M parameters) train 3× faster on a consumer-grade RTX 5070 GPU.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.8
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Punctuation",
+      "summary": "Mismatched punctuation around the \"i.e.\" aside in the baseline box",
+      "quote": "Every tensor in this loop i.e. weights, activations, gradients — is float32.",
+      "page": 3,
+      "ledger_claims": [],
+      "checks_run": [],
+      "verification": {
+        "action": "Read the sentence in the PDF (page 3, BASELINE box).",
+        "outcome": "The PDF shows the aside opened with nothing before \"i.e.\" and closed with an em dash, so the pair does not match."
+      },
+      "impact": "The sentence parses badly on first read; the reader has to back up to find where the aside starts.",
+      "needs_verification": false,
+      "body_markdown": "The parenthetical list opens with a bare \"i.e.\" and closes with an em dash. An aside needs the same mark on both sides. \"i.e.\" is also unnecessary once the dashes are there.\n\n**Suggested Improvement:** Use a matching pair of dashes.",
+      "suggested_edit": "Every tensor in this loop — weights, activations, gradients — is float32.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.95
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Punctuation and naming",
+      "summary": "ASCII arrow in prose and \"triton\" vs \"triton-windows\" in Setup",
+      "quote": "Windows needs triton -> pip install -U \"triton-windows>=3.8,<3.9\"",
+      "page": 3,
+      "ledger_claims": [],
+      "checks_run": ["F3"],
+      "verification": {
+        "action": "Checked the Hardware bullet in the PDF (page 3) and compared the package name with page 9.",
+        "outcome": "The PDF prints a literal \"->\" between the prose and the command. Page 9 names the package \"triton-windows\"; the Setup bullet says \"triton\". The sentence also repeats \"Windows\" in two consecutive fragments (\"Windows, PyTorch 2.x. Windows needs\")."
+      },
+      "impact": "A reader may look for a package called \"triton\"; the arrow reads as a typing shortcut left in.",
+      "needs_verification": false,
+      "body_markdown": "`Windows needs triton -> pip install ...` uses an ASCII arrow as punctuation, where the rest of the post uses the typeset arrow \"→\" only for measurements. The package is called `triton-windows` on page 9 but `triton` here.\n\n**Suggested Improvement:** Replace the arrow with a colon and name the package the same way in both places.",
+      "suggested_edit": "Windows needs the triton-windows package: pip install -U \"triton-windows>=3.8,<3.9\"",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.8
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Code identifiers",
+      "summary": "Config class and field names: GPTconfig, GPT(config), n_layers vs n_head",
+      "quote": "class GPTconfig:",
+      "page": 12,
+      "ledger_claims": [],
+      "checks_run": ["F2", "F3"],
+      "verification": {
+        "action": "Compared the page 12 listing in the PDF with its caption on page 11 and with the page 8 listing.",
+        "outcome": "Page 11 caption and page 12 listing: \"GPTconfig\" (lower-case c, not CamelCase). Page 8 listing: \"GPT(config)\". Within the page 12 listing the count fields are named unevenly: \"n_layers\" (plural) next to \"n_head\" (singular)."
+      },
+      "impact": "Readers copy these listings; a class name that breaks Python naming convention and two differently formed field names invite mismatches with the rest of their code.",
+      "needs_verification": false,
+      "body_markdown": "Naming in the config listing is uneven:\n\n- **Class name:** `GPTconfig` (page 11 caption, page 12 listing) is not CamelCase; Python convention and the source the post follows use `GPTConfig`.\n- **Field names:** `n_layers` is plural while `n_head` is singular in the same listing. Use one form for both.\n\nLocations: page 11 (`GPTconfig · python`), page 12 (`class GPTconfig:`, `n_layers: int = 12`, `n_head: int = 12`), and the instance `GPT(config)` on page 8.\n\n**Suggested Improvement:** Rename the class in the caption and listing, and make the two count fields parallel (`n_layer`/`n_head`).",
+      "suggested_edit": "class GPTConfig:",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.8
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Number and symbol format",
+      "summary": "Letter \"x\" in the title and TL;DR, \"×\" in the rest of the post",
+      "quote": "Train 3x Faster on GPU",
+      "page": 1,
+      "ledger_claims": ["K1"],
+      "checks_run": ["F3"],
+      "verification": {
+        "action": "Searched document.txt for every multiplier and checked the page 1 instances in the PDF.",
+        "outcome": "Letter x: title (\"3x Faster\"), subtitle (\"train 3x faster\"), TL;DR (\"making training 3x faster\"), all on page 1. Multiplication sign: every later instance (\"8×\", \"1.43×\", \"1.5–3×\", \"1.74×\", \"7.6×\", \"T×T\", the results table, \"11×\", \"3.1×\", \"1.4×\")."
+      },
+      "impact": "Cosmetic, but the inconsistency sits in the title and the headline number.",
+      "needs_verification": false,
+      "body_markdown": "The speedup is written `3x` three times on page 1 and with the multiplication sign `×` everywhere else in the post (pages 4, 5, 8, 10, 13, 14).\n\n**Suggested Improvement:** Use `×` throughout, including the title, subtitle and TL;DR.",
+      "suggested_edit": "Train 3× Faster on GPU",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.85
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Figure and table labels",
+      "summary": "Results table and chart label the same rows differently",
+      "quote": "vocab → 50304",
+      "page": 13,
+      "ledger_claims": [],
+      "checks_run": ["F2", "F3"],
+      "verification": {
+        "action": "Compared the row labels of the results table with the chart labels directly below it in the PDF (page 13), and with the prose spelling of the vocabulary size.",
+        "outcome": "Table: \"TF32 matmuls\", \"Flash attention\", \"vocab → 50304\". Chart: \"TF32\", \"flash attention\", \"vocab 50304\". Prose writes the number with a thousands separator (\"50,304\", \"50,257\" on pages 4, 11, 12)."
+      },
+      "impact": "The table and chart show the same six rows one above the other, so the differences are visible at a glance.",
+      "needs_verification": false,
+      "body_markdown": "Three of the six rows are labelled differently in the table and in the chart beneath it: `TF32 matmuls` / `TF32`, `Flash attention` / `flash attention` (capitalisation), and `vocab → 50304` / `vocab 50304`. Outside code, the vocabulary size is written `50,304` in prose but `50304` in both labels.\n\n**Suggested Improvement:** Use one label per row in both places, for example \"TF32\", \"Flash attention\" and the label below.",
+      "suggested_edit": "vocab → 50,304",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.8
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Capitalisation",
+      "summary": "Capital after the colon in one section title only",
+      "quote": "Padding the vocabulary: Nice numbers for",
+      "page": 11,
+      "ledger_claims": [],
+      "checks_run": ["F3"],
+      "verification": {
+        "action": "Compared the five optimization section titles in the PDF.",
+        "outcome": "Four titles use lower case after the colon (\"TF32: a cheaper multiply\", \"bfloat16 autocast: half the bytes\", \"torch.compile: remove the interpreter\", \"Flash attention: a fusion\"); only \"Padding the vocabulary: Nice numbers for CUDA\" capitalises the next word. It is also the only title that starts with a gerund, where the TL;DR entry is \"Pad the vocabulary\"."
+      },
+      "impact": "Breaks the otherwise uniform heading style of the five sections.",
+      "needs_verification": false,
+      "body_markdown": "The section 5 title capitalises the word after the colon (`Nice`); the other four section titles do not.\n\n**Suggested Improvement:** Lower-case \"nice\" to match.",
+      "suggested_edit": "Padding the vocabulary: nice numbers for",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.9
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Terminology consistency",
+      "summary": "\"Ampere+\" shorthand against \"Ampere or newer\" elsewhere",
+      "quote": "On Ampere+ with bfloat16, PyTorch picks the flash kernel automatically.",
+      "page": 10,
+      "ledger_claims": [],
+      "checks_run": ["F3"],
+      "verification": {
+        "action": "Searched document.txt for every mention of the GPU generation requirement.",
+        "outcome": "\"Ampere and newer GPUs\" (page 3), \"The GPU is Ampere or newer\" (page 4), \"On Ampere or newer.\" (page 6), \"Is the GPU Ampere or newer?\" (page 14); only page 10 uses \"Ampere+\"."
+      },
+      "impact": "Minor; one informal shorthand among four spelled-out forms.",
+      "needs_verification": false,
+      "body_markdown": "The hardware condition is written out as \"Ampere or newer\" in four places and abbreviated to `Ampere+` once. The USE IT WHEN bullets for the same condition are also not parallel: a full sentence on page 4 (\"The GPU is Ampere or newer ...\") and a fragment on page 6 (\"On Ampere or newer.\").\n\n**Suggested Improvement:** Use the spelled-out form here and one sentence shape for the condition in each box.",
+      "suggested_edit": "On Ampere or newer with bfloat16, PyTorch picks the flash kernel automatically.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.85
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Glossary and terminology",
+      "summary": "Glossary terms that the body text never uses",
+      "quote": "Boundary kernel",
+      "page": 12,
+      "ledger_claims": [],
+      "checks_run": ["F3"],
+      "verification": {
+        "action": "Searched document.txt for each glossary headword outside its own glossary entry.",
+        "outcome": "\"Boundary kernel\" (page 12): body says \"a separate, slower pass\" and \"the leftover pass\". \"Materialize\" (page 11): body says \"writing ... to memory\". \"FLOPs\" (page 11): body says \"arithmetic\"; only \"TFLOPS\" appears, on page 4. \"Gradient scaler\" (page 7): body says \"GradScaler\". None of the four headwords occurs in the running text."
+      },
+      "impact": "A glossary entry is useful only if the reader meets the term in the text; these four define words the post does not use and leave the words it does use undefined.",
+      "needs_verification": false,
+      "body_markdown": "Four glossary headwords do not appear in the sections they close:\n\n- **Boundary kernel** (page 12): the text calls it \"a separate, slower pass\" and \"the leftover pass\".\n- **Materialize** (page 11): the text says \"writing that T×T matrix to memory\".\n- **FLOPs** (page 11): the text says \"more arithmetic\".\n- **Gradient scaler** (page 7): the text uses the class name `GradScaler`.\n\n**Suggested Improvement:** Either use each term once in the body where the concept is introduced, or rename the glossary entry to the wording the body uses (for example the entry below).",
+      "suggested_edit": "Leftover pass (boundary kernel)",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.85
+    },
+    {
+      "severity": "SUGGESTION",
+      "label": "Potential Concern",
+      "category": "Reference formatting",
+      "summary": "\"References:\" label style and unidentified source types in the credits",
+      "quote": "References:",
+      "page": 15,
+      "ledger_claims": [],
+      "checks_run": ["F3"],
+      "verification": {
+        "action": "Compared the label with the other headings in the PDF and read the credit line above it (page 15).",
+        "outcome": "\"References:\" is plain body text with a trailing colon; the neighbouring \"Related reading\" and all section headings are styled headings without a colon. The credit sentence names \"Let's reproduce GPT-2 (124M)\" without saying it is a video, while \"build-nanogpt\" is identified as a repository. The Brown et al. entry carries a trailing note (\"(GPT-3) for the optimizer settings\") that no other entry has."
+      },
+      "impact": "Optional polish; the list is readable as it stands.",
+      "needs_verification": false,
+      "body_markdown": "Three small points in the closing card: the `References:` label is the only heading-like line with a colon and without heading styling; the credit sentence identifies `build-nanogpt` as a repository but does not say that `Let's reproduce GPT-2 (124M)` is a video lecture; and one of the five reference entries has an explanatory tail where the others are author, year, title only.\n\n**Suggested Improvement:** Style the label like \"Related reading\" and drop the colon; write \"Andrej Karpathy's video lecture Let's reproduce GPT-2 (124M) and his build-nanogpt repository\"; keep the reference entries to one pattern.",
+      "suggested_edit": "References",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.6
+    }
+  ]
+}

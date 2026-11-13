@@ -1,0 +1,556 @@
+[page 1]
+         TRANSFORMERS FROM SCRATCH · GPU OPTIMIZATION
+
+5 Lines of Code to Make Your LLM
+Train 3x Faster on GPU
+
+5 must-use single-line exploits that made the smallest GPT-2 (124M
+parameter model) train 3x faster on a consumer-grade RTX 5070 GPU.
+
+GPU Optimization    PyTorch  GPT-2
+
+THE TAKEAWAY FIRST                                                                      01
+
+TL;DR
+
+LLMs are hard to train, primarily due to the compute involved. However we can
+use some tactics to achieve on-par performance with same compute budget
+with a few modifications.
+
+These modfications and simple yet powerful exploits to fully utilize the
+capabilities of modern GPUs can significantly reduce training time. Most of it
+comes down to learning how GPU works.
+
+We apply five one-line changes to a 124M parameter GPT-2 Model's
+training loop and reduce training time per step from 250 ms to 80 ms
+on a single RTX 5070 making training 3x faster
+
+Baseline
+The default state: activations, parameters and weights are all represented in float32.
+
+[page 2]
+logits, loss = model(x, y)
+
+                                                                              250 ms
+
+1 · TF32
+Reduces precision only while the matrix multiplication is being computed.
+
+ torch.set_float32_matmul_precision('high')
+
+                                                                              175 ms
+
+2 · bfloat16 autocast
+Matmul operations are downcast to 16-bit floating point to reduce data movement.
+
+ with torch.autocast(device_type=device, dtype=torch.bfloat16):
+
+                                                                                                           165 ms
+
+3 · torch.compile
+Lets PyTorch see the whole network ahead of time and merge small operations into big
+ones.
+
+ model = torch.compile(model)
+
+                                                                                                             95 ms
+
+4 · Flash attention
+Computes attention without ever writing the full attention matrix to memory.
+
+ y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+
+                                                                              85 ms
+
+5 · Pad the vocabulary                                                        80 ms
+Rounds the vocabulary up to a number the GPU can split into even blocks.
+
+ vocab_size: int = 50304 # was 50257
+
+Milliseconds per training step on an RTX 5070, measured after each change
+
+BASELINE                                                                      02
+
+Setup
+
+[page 3]
+Model: GPT-2 124M with 12 layers, 12 heads, 768 embedding size and GPT-2
+initialization.
+Data: Tiny Shakespeare (1M characters), ~338k tokens
+
+Hardware: one RTX 5070 (8 GB). Windows, PyTorch 2.x. Windows needs
+triton -> pip install -U "triton-windows>=3.8,<3.9" .
+
+Metric: wall-clock milliseconds per training step
+
+             timing one step honestly · python
+
+t0 = time.time()
+optimizer.zero_grad()
+logits, loss = model(x.to(device), y.to(device))
+loss.backward()
+optimizer.step()
+torch.cuda.synchronize() # wait for the GPU, not just the CPU's queue
+t1 = time.time()
+print(f"{(t1 - t0) * 1000:.2f} ms")
+
+BASELINE
+
+~250 ms
+
+Every tensor in this loop i.e. weights, activations, gradients — is float32. Thirty-
+two bits per number is far more precision than training needs, and it is also four
+bytes that have to travel across the memory bus every time a number is read or
+written.
+
+OPTIMIZATION 1 · PRECISION                                           03
+
+TF32: a cheaper multiply, same float32 tensors
+
+Most of a training step is matrix multiplication, and on Ampere and
+newer GPUs that multiply can run at lower precision without our
+code ever seeing a lower-precision number.
+
+[page 4]
+TF32 is a mode of the tensor core, the hardware unit that multiplies small
+blocks of matrices. Inside each multiply it keeps float32's sign and 8 exponent
+bits but cuts the mantissa from 23 bits to 10. The inputs arrive as float32, the
+running sum stays float32, and the output is float32. The precision is dropped
+only inside the instruction.
+
+   Nothing in our code changes type. logits.dtype still prints torch.float32 .
+   Only matrix multiplications get faster, and in GPT-2 they are most of the
+   work. The largest is the classifier that turns 768 channels into 50,257
+   vocabulary scores.
+   The results are slightly less exact, but the training loss looks no different.
+
+On paper the payoff is big. The A100 datasheet lists 19.5 TFLOPS for float32 and
+156 for TF32, an 8× ceiling.
+
+                 one line · python
+
+   # 'highest' = float32, 'high' = TF32, 'medium' = bfloat16
+   torch.set_float32_matmul_precision('high')
+
+    MEASURED
+
+ 250 → 175 ms
+
+   1.43×, not 8×. That gap is the most useful number in this post. The multiply
+   got cheaper, but every number is still a 4-byte float32 that has to travel from
+   GPU memory to the compute units and back. So the cores spend their time
+   waiting for data, not doing arithmetic: the loop is memory bound. Even well-
+   tuned training code rarely keeps the tensor cores busy more than about 60% of
+   the time.
+
+     USE IT WHEN
+
+       The GPU is Ampere or newer (RTX 30-series, A100, and later).
+       Always on those cards. It is one line and costs no accuracy we can measure.
+
+     LIMITATIONS
+
+[page 5]
+       Matmuls only. Layer norms, softmax, GELU and the optimizer are untouched.
+       Capped by memory bandwidth, so expect 1.5–3× on a real training loop, not
+       8×.
+       No gain on older cards.
+
+If moving bytes is the bottleneck, the next step is to move fewer of them.
+
+GLOSSARY
+
+Mantissa
+The bits of a float that hold its significant digits. Fewer bits means coarser values.
+Exponent
+The bits that set how large or small a float can be. TF32 keeps all eight.
+Memory bound
+The compute units sit idle waiting for data to arrive from memory, so faster arithmetic barely
+helps.
+
+OPTIMIZATION 2 · PRECISION                        04
+
+bfloat16 autocast: half the bytes per activation
+
+Mixed precision goes after the bottleneck TF32 exposed. The forward
+pass stores activations in 16 bits instead of 32, so every matmul input
+is half as much data to move. The weights stay float32 so the optimizer
+updates them at full precision.
+
+bfloat16 and float16 both use 16 bits, but they spend them differently:
+
+   bfloat16 keeps all 8 exponent bits, so it covers the same range of values as
+   float32 and gives up precision instead (7 mantissa bits). Values don't
+   overflow or round to zero, so nothing extra is needed.
+
+   float16 keeps more precision but shrinks the range, so small gradients
+   round to zero. Training in float16 needs a GradScaler , one more piece of
+   state to manage. bfloat16 avoids it.
+
+[page 6]
+torch.autocast chooses op by op. Matrix multiplies run in bfloat16. Softmax,
+layer norm and the loss stay in float32 because small errors there distort the
+result.
+
+only the forward pass and loss go inside autocast · python
+
+with torch.autocast(device_type=device, dtype=torch.bfloat16):
+
+logits, loss = model(x.to(device), y.to(device))
+
+loss.backward()  # outside
+
+optimizer.step() # outside
+
+Inside the block, logits.dtype is torch.bfloat16 while
+model.transformer.wte.weight.dtype is still torch.float32 . Activations in low
+precision and weights in full precision is what "mixed" refers to.
+
+    MEASURED
+
+ 175 → 165 ms
+
+   Only 6%. Halving the activations should have helped more, but by now a
+   different cost dominates. Eager PyTorch launches each small element-wise
+   operation as its own GPU program, and each one reads its input from memory
+   and writes its output back. Lowering precision doesn't reduce the number of
+   those trips.
+
+USE IT WHEN
+
+   On Ampere or newer.
+   Let autocast decide. Don't call .bfloat16() on the model or tensors yourself.
+
+LIMITATIONS
+
+   Less precise than float32. We accept that for the speed and, if needed, train
+   a little longer.
+   PyTorch doesn't document clearly which ops autocast converts.
+   The gain is small here because the bottleneck is now the number of memory
+   round trips.
+
+[page 7]
+Precision is now as low as it can safely go. What's left is how many times the
+data travels.
+
+GLOSSARY
+
+Autocast
+A PyTorch context that runs each operation at a lower precision when it is safe to do so.
+Gradient scaler
+Extra machinery float16 training needs to keep small gradients from rounding to zero.
+
+OPTIMIZATION 3 · MEMORY TRAFFIC                                    05
+
+torch.compile: remove the interpreter, fuse the
+kernels
+
+torch.compile reads the whole network before running it and
+rewrites it into fewer, larger GPU programs, so data is read from
+memory once and used many times.
+
+It is a compiler for neural networks, much as GCC is a compiler for C. It
+removes two costs:
+
+1. The Python interpreter. In eager mode Python walks the model line by line
+   and launches each operation without knowing what comes next. Compiled,
+   the network runs as a single unit with no Python in between.
+
+2. Repeated trips to memory. The GELU, 0.5·x·(1 + tanh(√(2/π)·(x +
+   0.044715·x³))) , is about eight small operations. Eager PyTorch launches eight
+   kernels, and each one reads from GPU memory and writes its result back.
+   The compiled version reads x once, does all eight operations while the
+   data is on the chip, and writes once. This is called kernel fusion.
+
+[page 8]
+Eager: one round trip to HBM per op
+
+             x³                      · 0.044    +x  tanh      … 8 reads + 8 writes
+
+HBM
+
+Compiled: fused kernel, one read and one write
+
+HBM              x³ → · 0.044 → + x → tanh → … stays on-chip  1 read + 1 write
+
+Kernel fusion keeps the data on the chip. The arithmetic is the same; what disappears
+is the round trips to memory.
+
+Fusion matters this much because of where the data lives. HBM, the GPU's
+main memory, holds tens of gigabytes but sits off the compute chip, so every
+read and write is slow. On-chip memory (caches and registers) holds only tens
+of megabytes but is very fast. A step that goes back to HBM after every
+operation spends most of its time moving data.
+
+                 one line; pays compilation time on the first step · python
+
+   model = GPT(config).to(device)
+   model = torch.compile(model)
+
+MEASURED
+
+165 → 95 ms
+
+1.74× from one line, the largest single gain in the loop. This is the cost
+autocast couldn't reach. The first step takes tens of seconds because that's
+when compilation happens, so start timing from the second step.
+
+USE IT WHEN
+
+   Always, unless debugging. Karpathy's view is that the only price is compile
+   time.
+
+LIMITATIONS
+
+[page 9]
+       Compilation takes time, and it happens again whenever input shapes
+       change.
+       On Windows it needs the triton-windows package.
+       In Karpathy's run, compile broke text generation and the HellaSwag eval with
+       an unclear error, so those ran uncompiled.
+       It only fuses operations as written. The next speedup needs the algorithm
+       itself rewritten.
+
+GLOSSARY
+
+Eager mode
+PyTorch's default: each line of Python launches its GPU operation as soon as it runs.
+Kernel
+One program launched on the GPU. Each launch has fixed overhead and does its own memory
+reads and writes.
+Kernel fusion
+Combining several operations into one kernel so the data stays on the chip between them.
+
+OPTIMIZATION 4 · MEMORY TRAFFIC                                     06
+
+Flash attention: a fusion the compiler cannot
+find
+
+The attention matrix is the largest temporary tensor in the step. Flash
+attention computes the same output without ever writing that T×T
+matrix to memory.
+
+Our attention was four lines:
+
+             CausalSelfAttention.forward — before · python
+
+att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
+att = att.masked_fill(self.bias[:, :, :T, :T] == 0, float('-inf'))
+att = F.softmax(att, dim=-1)
+y = att @ v
+
+[page 10]
+At T = 1024, att holds about a million numbers for every head of every
+sequence in the batch. Each of the four lines writes that matrix to HBM, and the
+next line reads it back. Flash attention does all four steps in one kernel, a block
+at a time, so the full matrix never exists in memory.
+
+This works because of the online softmax. A normal softmax needs the whole
+row before it can normalize. The online version keeps a running maximum and
+a running sum and corrects them as each new block arrives, so the row can be
+handled in pieces. Flash attention does more arithmetic than the four-line
+version and is still faster (the paper reports up to 7.6×), because arithmetic was
+never the expensive part.
+
+torch.compile can't find this. It fuses the operations we wrote; it doesn't know
+that softmax can be reorganized.
+
+                 CausalSelfAttention.forward — after · python
+
+   # is_causal=True applies the autoregressive mask
+   y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+
+    MEASURED
+
+ 95 → 85 ms
+
+   10% faster, and the loss curve is unchanged apart from floating-point noise.
+   It is the same computation done in a different order.
+
+     USE IT WHEN
+
+       Any causal attention with sequences of a few hundred tokens or more.
+       On Ampere+ with bfloat16, PyTorch picks the flash kernel automatically.
+
+     LIMITATIONS
+
+       The bias mask buffer is no longer used. Passing a custom mask instead of
+        is_causal can drop us off the fast path.
+
+[page 11]
+       The attention weights are hidden inside the kernel. To inspect them we need
+       the slow four-line version.
+
+GLOSSARY
+
+Materialize
+Write a full tensor out to memory. Flash attention never does this for the T×T matrix.
+Online softmax
+Computing a softmax in chunks by carrying a running maximum and running sum, so no chunk
+has to wait for the others.
+FLOPs
+Floating-point operations. Flash attention does more of them and is still faster.
+
+OPTIMIZATION 5 · NICE NUMBERS             07
+
+Padding the vocabulary: Nice numbers for
+CUDA
+
+GPU kernels cut matrices into tiles whose sides are powers of two: 16,
+32, 64, 128. When a dimension doesn't divide evenly, the leftover goes
+through a separate, slower pass. The cheapest remaining speedup is to
+stop handing the GPU awkward numbers.
+
+50,257, GPT-2's vocabulary size, is odd, so it doesn't split into power-of-two
+tiles. It also sets the size of the two largest matrices in the model: the token
+embedding and the output classifier.
+
+50,304 is the nearest multiple of 128, so it divides by 8, 16, 32, 64 and 128.
+
+The tokenizer never produces the 47 extra tokens, so their embedding rows
+are never used. The classifier learns to give them near-zero probability, as it
+already does for the thousands of real tokens that never appear in
+Shakespeare. Nothing breaks.
+
+GPTconfig · python
+
+[page 12]
+@dataclass                     # was 50257; nearest multiple of 128
+class GPTconfig:
+
+      vocab_size: int = 50304
+      block_size: int = 4096
+      n_embd: int = 768
+      n_layers: int = 12
+      n_head: int = 12
+
+MEASURED
+
+85 → 80 ms
+
+The model now does slightly more work and runs 6% faster. Karpathy saw
+about 30% on PyTorch 2.3.1 and earlier. Newer versions handle the leftover pass
+better, so the gain is smaller but still there. Like flash attention, this is a speedup
+the compiler won't find for us.
+
+USE IT WHEN
+
+   A dimension feeds a matmul: vocab size, embedding width, hidden size,
+   head count.
+   Check the config for any of those that doesn't divide by a power of two.
+
+LIMITATIONS
+
+   The padding rows use a little memory and compute for nothing.
+   Hugging Face weights have 50,257 rows, so loading them with
+    from_pretrained needs a 50,257 config or the copy fails.
+   Not every odd number is easy to fix. GPT-2 XL has 25 heads, and changing
+   that changes the model.
+
+GLOSSARY
+
+Tile
+The fixed-size block of a matrix a GPU kernel processes at once, usually a power of two on each
+side.
+
+Boundary kernel
+The slower pass that handles what's left when a dimension doesn't fill the last tile.
+
+[page 13]
+R E S U LT S                                               08
+
+Where the 250 ms went
+
+CHANGE             MS / STEP     VS PREVIOUS  VS BASELINE
+
+float32 baseline   250           —            1.00×
+TF32 matmuls       175           1.43×        1.43×
+bfloat16 autocast  165           1.06×        1.52×
+torch.compile      95            1.74×        2.63×
+Flash attention    85            1.12×        2.94×
+vocab → 50304      80            1.06×        3.13×
+
+float32 baseline
+
+                                              250 ms
+
+TF32
+
+−75 ms
+
+bfloat16 autocast                    175 ms
+                                 165 ms
+−10 ms
+
+torch.compile             95 ms
+                     85 ms
+−70 ms             80 ms
+
+flash attention
+
+−10 ms
+
+vocab 50304
+
+−5 ms
+
+Per-step latency after each optimization, RTX 5070. Green bars are the memory-traffic
+changes.
+
+[page 14]
+The 170 ms saved splits evenly: 85 ms from the two precision changes and 85
+ms from the three memory-traffic changes. They behave differently, though.
+Precision gave one big jump with TF32 and then stalled. The memory-traffic
+changes kept paying off, with torch.compile alone saving 70 ms.
+
+Karpathy's A100 went from 1000 ms to 93 ms, about 11× against our 3.1×. His
+float32 baseline started much slower, and the A100's roughly 2 TB/s of memory
+bandwidth leaves more room for each change to help. The pattern is the same
+on both cards: TF32 falls well short of its datasheet number, autocast adds little
+on top, and torch.compile is a big jump.
+
+    WHAT THE SEQUENCE TELLS US
+
+   Getting 1.4× from TF32 instead of 8× is the diagnosis: the loop is memory
+   bound. That one number predicts the rest. Autocast gains little because
+   it shrinks the data but not the number of trips; torch.compile gains a lot
+   because it cuts the trips. Making one change at a time turns each
+   speedup into a clue about what is slowing the step down.
+
+WRAPPING UP      09
+
+Conclusions
+
+01 Is the GPU Ampere or newer? If yes, turn on TF32 and bfloat16
+
+       autocast. Together they are two lines and cost no accuracy we can
+       measure. If not, go straight to compile.
+
+02 Is the model running in eager PyTorch? If yes, torch.compile is the
+
+       biggest single gain available, and flash attention is the one fusion it won't
+       find on its own.
+
+Related reading
+
+[page 15]
+      GPT-2 · PAPER NOTES
+
+   GPT-2: When Next-Token Prediction Becomes Multitask
+   Learning
+
+    The architecture, data and tokenizer behind the model this post trains.
+
+The optimizations and their reasoning follow Andrej Karpathy's Let's reproduce GPT-2
+(124M) and the build-nanogpt repository. All timings are from our own notebook on a
+single RTX 5070.
+References:
+
+   Dao et al. (2022), FlashAttention: Fast and Memory-Efficient Exact Attention with IO-
+   Awareness
+   Milakov & Gimelshein (2018), Online normalizer calculation for softmax
+   Brown et al. (2020), Language Models are Few-Shot Learners (GPT-3) for the
+   optimizer settings
+   PyTorch, Automatic Mixed Precision recipe
+   NVIDIA, A100 datasheet
+

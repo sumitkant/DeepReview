@@ -1,0 +1,106 @@
+{
+  "document_type": "technical blog post with measurements and code",
+  "reader_and_goal": "ML practitioners who will copy the five changes and repeat the explanations",
+  "segments": [
+    {
+      "id": "S1",
+      "title": "Title, TL;DR, summary chart and baseline setup (pages 1 to 3)",
+      "passages": ["5 Lines of Code to Make Your LLM", "TL;DR", "Baseline", "Setup", "timing one step honestly", "Every tensor in this loop"],
+      "budget": "medium",
+      "why_this_budget": "Sets the headline claim and the measurement method everything else depends on.",
+      "checks": [
+        "Headline 3x and '250 ms to 80 ms' arithmetic; 'five one-line changes' against the code actually shown",
+        "Hardware line 'one RTX 5070 (8 GB)' and software versions",
+        "Reproducibility: batch size, sequence length, number of steps or runs, warm-up, variance",
+        "The timing code: what is inside the timed region, clock used, synchronisation",
+        "'on-par performance with same compute budget' and other TL;DR wording against what is measured",
+        "Dataset figures: Tiny Shakespeare 1M characters, ~338k tokens"
+      ]
+    },
+    {
+      "id": "S2",
+      "title": "Optimizations 1 and 2: TF32 and bfloat16 autocast (pages 3 to 7)",
+      "passages": ["TF32: a cheaper multiply, same float32 tensors", "bfloat16 autocast: half the bytes per activation"],
+      "budget": "high",
+      "why_this_budget": "Dense hardware and numerics claims, and the post's central diagnosis ('memory bound') is derived here.",
+      "checks": [
+        "TF32 bit layout, where it applies, and which GPUs support it",
+        "The code comment mapping 'highest', 'high', 'medium' to float32, TF32, bfloat16",
+        "A100 datasheet figures 19.5 and 156 TFLOPS and the '8x ceiling'",
+        "The inference from 1.43x to 'memory bound', the '60%' utilisation claim, and 'expect 1.5-3x' against the post's own 1.43x",
+        "bfloat16 vs float16: bit layouts, range, GradScaler; what autocast keeps in float32; what dtype logits and loss have",
+        "Whether the explanation for the small autocast gain is supported by the measurements"
+      ]
+    },
+    {
+      "id": "S3",
+      "title": "Optimizations 3 and 4: torch.compile and flash attention (pages 7 to 11)",
+      "passages": ["torch.compile: remove the interpreter, fuse the", "Flash attention: a fusion the compiler cannot"],
+      "budget": "high",
+      "why_this_budget": "Mechanism claims about compilers, GPU memory hierarchy and an algorithm from a cited paper.",
+      "checks": [
+        "GELU formula and constant, the 'eight operations' count, and consistency between text and diagram",
+        "Memory hierarchy claims: HBM on this GPU, on-chip memory sizes",
+        "What torch.compile removes and when it recompiles; the GCC analogy",
+        "Flash attention: what is and is not materialised, online softmax description, 'more arithmetic', the 7.6x figure",
+        "When PyTorch's scaled_dot_product_attention uses a flash kernel",
+        "Percentages '1.74x', '10% faster' against the table; statements attributed to Karpathy"
+      ]
+    },
+    {
+      "id": "S4",
+      "title": "Optimization 5, results, conclusions and references (pages 11 to 15)",
+      "passages": ["Padding the vocabulary: Nice numbers for", "Where the 250 ms went", "WHAT THE SEQUENCE TELLS US", "Conclusions", "References:"],
+      "budget": "high",
+      "why_this_budget": "Holds the results table, the causal story and the comparison with someone else's numbers.",
+      "checks": [
+        "50257, 50304, 'nearest multiple of 128', 47 extra tokens, divisibility claims",
+        "The GPTconfig listing against the setup and the rest of the post (block_size, names)",
+        "Every ratio in the results table and the '170 ms splits evenly' statement; which changes are classed as precision vs memory traffic",
+        "Karpathy comparison: 1000 ms to 93 ms, 'about 30%' for vocab padding, 'roughly 2 TB/s'",
+        "Whether the 'memory bound' diagnosis and 'that one number predicts the rest' follow from a one-change-at-a-time sequence",
+        "Conclusions against the five optimizations; references against what the body uses"
+      ]
+    },
+    {
+      "id": "S5",
+      "title": "global-consistency",
+      "passages": ["whole document"],
+      "budget": "high",
+      "why_this_budget": "The same numbers and claims recur in the summary chart, sections, table and conclusion.",
+      "checks": [
+        "Every ms figure and ratio wherever it appears: TL;DR chart, section 'MEASURED' boxes, table, waterfall, prose",
+        "Percent wording ('6%', '10% faster', '3x') against a consistent definition",
+        "One-line descriptions on pages 1 to 2 against the detailed sections (do they say the same thing)",
+        "Sequence length, vocabulary size, model size, hardware wherever stated or implied",
+        "Claims repeated in 'USE IT WHEN', 'LIMITATIONS' and conclusions that contradict each other",
+        "Terms used with more than one meaning (kernel, memory, on-chip, precision)"
+      ]
+    },
+    {
+      "id": "S6",
+      "title": "copy-consistency",
+      "passages": ["whole document"],
+      "budget": "medium",
+      "why_this_budget": "Proofreading pass.",
+      "checks": [
+        "Typos and grammar",
+        "Capitalisation and naming of products, classes and terms",
+        "Number, unit and symbol formats (x vs ×, ms spacing, thousands separators)",
+        "Code identifiers consistent between listings and prose",
+        "Parallel structure of repeated blocks and glossary coverage"
+      ]
+    }
+  ],
+  "external_checks": [
+    "RTX 5070 desktop VRAM size; memory type (GDDR vs HBM)",
+    "NVIDIA A100 datasheet: FP32 and TF32 peak TFLOPS; memory bandwidth",
+    "torch.set_float32_matmul_precision: meaning of 'highest', 'high', 'medium'",
+    "TF32 bit layout",
+    "PyTorch autocast op lists: which ops autocast to float32; whether documented",
+    "FlashAttention paper speedup figures",
+    "Karpathy 'Let's reproduce GPT-2 (124M)': ms per step at each stage, vocab padding gain",
+    "GPT-2 XL head count; GPT-2 context length; Tiny Shakespeare token count",
+    "scaled_dot_product_attention backend selection"
+  ]
+}

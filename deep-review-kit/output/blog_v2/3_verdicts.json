@@ -1,0 +1,747 @@
+{
+  "verdicts": [
+    {
+      "index": 0,
+      "verdict": "ADJUSTED",
+      "reason": "PDF page 1 shows the sentence as quoted: no comma after 'However', no article before 'same compute budget', two 'with' phrases. The body's remark that 'on par' should not be hyphenated is wrong here ('on-par performance' precedes the noun), so it is removed.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "TL;DR second sentence: missing comma, missing article, doubled \"with\"",
+      "body_markdown": "`However we can use some tactics to achieve on-par performance with same compute budget with a few modifications.` has three slips: a sentence-opening \"However\" needs a comma, \"same compute budget\" needs \"the\", and the two stacked \"with\" phrases read awkwardly.\n\n**Suggested Improvement:** Recast as below.",
+      "suggested_edit": "However, a few modifications let us achieve performance on par with the baseline on the same compute budget."
+    },
+    {
+      "index": 1,
+      "verdict": "CONFIRMED",
+      "reason": "PDF page 1 reads 'modfications'; the preceding sentence has 'modifications'. Edit is a drop-in for the full sentence.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Typo \"modfications\" in the TL;DR",
+      "suggested_edit": "These modifications are simple yet powerful exploits that fully utilize the capabilities of modern GPUs and can significantly reduce training time."
+    },
+    {
+      "index": 2,
+      "verdict": "CONFIRMED",
+      "reason": "PDF page 1 reads 'how GPU works'. Real slip.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Missing article in \"how GPU works\"",
+      "suggested_edit": "Most of it comes down to learning how a GPU works."
+    },
+    {
+      "index": 3,
+      "verdict": "CONFIRMED",
+      "reason": "PDF page 1: the highlighted sentence ends 'making training 3x faster' with no full stop and no comma; 'Model's' is capitalised; subtitle has lower-case 'model'.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "TL;DR headline sentence: capital \"Model\", missing hyphen, comma and full stop",
+      "suggested_edit": "We apply five one-line changes to a 124M-parameter GPT-2 model's training loop and reduce training time per step from 250 ms to 80 ms on a single RTX 5070, making training 3× faster."
+    },
+    {
+      "index": 4,
+      "verdict": "ADJUSTED",
+      "reason": "Subtitle confirmed on PDF page 1. 'single-line exploits' against 'five one-line changes' is a real naming inconsistency; the numeral-at-start and parenthesis points are style preferences for a tagline, so this is optional polish, not a demonstrable error.",
+      "severity": "SUGGESTION",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "Subtitle says \"single-line exploits\", TL;DR says \"one-line changes\"",
+      "suggested_edit": "Five must-use one-line changes that made the smallest GPT-2 model (124M parameters) train 3× faster on a consumer-grade RTX 5070 GPU."
+    },
+    {
+      "index": 5,
+      "verdict": "CONFIRMED",
+      "reason": "PDF page 3 BASELINE box shows 'i.e. weights, activations, gradients — is float32': aside opened with nothing, closed with an em dash.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Mismatched punctuation around the \"i.e.\" aside in the baseline box",
+      "suggested_edit": "Every tensor in this loop — weights, activations, gradients — is float32."
+    },
+    {
+      "index": 6,
+      "verdict": "ADJUSTED",
+      "reason": "PDF page 3 shows a literal '->' and 'triton' against 'triton-windows' on page 9. Body corrected: the typeset arrow is also used in the results table label, not only in measurement boxes.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "ASCII arrow in prose and \"triton\" vs \"triton-windows\" in Setup",
+      "body_markdown": "`Windows needs triton -> pip install ...` uses an ASCII arrow as punctuation, where the rest of the post uses the typeset arrow \"→\" (measurement boxes and the results table). The package is called `triton-windows` on page 9 but `triton` here.\n\n**Suggested Improvement:** Replace the arrow with a colon and name the package the same way in both places.",
+      "suggested_edit": "Windows needs the triton-windows package: pip install -U \"triton-windows>=3.8,<3.9\""
+    },
+    {
+      "index": 7,
+      "verdict": "CONFIRMED",
+      "reason": "PDF pages 11-12 show 'GPTconfig' and 'n_layers' beside 'n_head'. SEARCH RESULTS item 9 confirms the followed source uses GPTConfig and n_layer.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Config class and field names: GPTconfig, GPT(config), n_layers vs n_head",
+      "suggested_edit": "class GPTConfig:"
+    },
+    {
+      "index": 8,
+      "verdict": "CONFIRMED",
+      "reason": "Letter x appears three times on page 1 (title, subtitle, TL;DR); every later multiplier uses the multiplication sign. Checked on the PDF.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Letter \"x\" in the title and TL;DR, \"×\" in the rest of the post",
+      "suggested_edit": "Train 3× Faster on GPU"
+    },
+    {
+      "index": 9,
+      "verdict": "CONFIRMED",
+      "reason": "PDF page 13: table rows 'TF32 matmuls', 'Flash attention', 'vocab → 50304'; chart labels 'TF32', 'flash attention', 'vocab 50304'. Prose uses 50,304.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Results table and chart label the same rows differently",
+      "suggested_edit": "vocab → 50,304"
+    },
+    {
+      "index": 10,
+      "verdict": "CONFIRMED",
+      "reason": "PDF page 11 title reads 'Padding the vocabulary: Nice numbers for CUDA'; the other four section titles use lower case after the colon.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Capital after the colon in one section title only",
+      "suggested_edit": "Padding the vocabulary: nice numbers for"
+    },
+    {
+      "index": 11,
+      "verdict": "CONFIRMED",
+      "reason": "'Ampere+' occurs once (page 10); 'Ampere or newer' / 'Ampere and newer' in four other places. Consistency slip, small.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "\"Ampere+\" shorthand against \"Ampere or newer\" elsewhere",
+      "suggested_edit": "On Ampere or newer with bfloat16, PyTorch picks the flash kernel automatically."
+    },
+    {
+      "index": 12,
+      "verdict": "ADJUSTED",
+      "reason": "Searched the text: 'Boundary kernel', 'Materialize', 'FLOPs' and 'Gradient scaler' occur only as glossary headwords (body uses 'leftover pass', 'writing ... to memory', 'arithmetic', 'GradScaler'). True, but it is a usability point, not an error, so the label is lowered.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "Glossary terms that the body text never uses",
+      "suggested_edit": "Leftover pass (boundary kernel)"
+    },
+    {
+      "index": 13,
+      "verdict": "CONFIRMED",
+      "reason": "PDF page 15: 'References:' is plain text with a colon; the Brown et al. entry has a trailing note. Optional polish as rated.",
+      "severity": "SUGGESTION",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "\"References:\" label style and unidentified source types in the credits",
+      "suggested_edit": "References"
+    },
+    {
+      "index": 14,
+      "verdict": "CONFIRMED",
+      "reason": "Reproduced from the text: pages 3-5 name bytes moved ('Capped by memory bandwidth', 'If moving bytes is the bottleneck'); page 6 concedes 'Halving the activations should have helped more' and switches to number of trips; page 14 says the TF32 number 'predicts the rest'. TF32 changes only internal matmul precision, not the number of kernel launches (established). The central argument is inconsistent as written.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Bottleneck told two ways: bytes moved (pages 3-5) vs number of trips (pages 6, 14)",
+      "suggested_edit": ""
+    },
+    {
+      "index": 15,
+      "verdict": "CONFIRMED",
+      "reason": "Recomputed: 1024^2 = 1,048,576; 4096^2 = 16,777,216; (4096-1024) x 768 = 2,359,296 extra position parameters, about 126.8M total. PDF page 12 shows block_size: int = 4096; page 10 argues at T = 1024; no timed sequence length is stated.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Config block_size 4096 vs T = 1024 and GPT-2 124M",
+      "suggested_edit": "block_size: int = [value used for the timed runs; 1024 if GPT-2 124M as described]"
+    },
+    {
+      "index": 16,
+      "verdict": "ADJUSTED",
+      "reason": "Internal mismatch reproduced (8 GB on page 3 against 'tens of gigabytes' and 'HBM' on page 8, diagram and page 10). SEARCH RESULTS items 1 and 8 now settle the outside facts, so the body's 'should be checked' paragraph is replaced with the confirmed facts.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Memory described as tens of gigabytes of HBM vs the 8 GB RTX 5070 in the setup",
+      "body_markdown": "**Definitive Flaw (Hardware description against setup):** Page 8 explains the gain with `HBM, the GPU's main memory, holds tens of gigabytes but sits off the compute chip`, and the diagram labels the memory box `HBM`. The setup on page 3 says `one RTX 5070 (8 GB)` and the subtitle calls it `consumer-grade`. Eight gigabytes is not tens of gigabytes, so the explanation does not describe the card the measurements come from.\n\nOutside evidence confirms both problems. The RTX 5070 uses GDDR7, not HBM (HBM is the memory of data-centre cards such as the A100). The desktop RTX 5070 has 12 GB; 8 GB is the separate RTX 5070 Laptop GPU, so `(8 GB)` also leaves it unclear which product was measured.\n\n**Suggested Improvement:** Describe the memory of the card that was measured, and use a neutral term such as \"GPU memory (VRAM)\" in the text and the diagram. Confirm the memory size in the Setup line.",
+      "suggested_edit": "main memory, holds [N] GB on this card but sits off the compute chip, so every"
+    },
+    {
+      "index": 17,
+      "verdict": "ADJUSTED",
+      "reason": "Reproduced: page 4 'costs no accuracy we can measure' and 'slightly less exact'; page 6 'Less precise than float32 ... train a little longer'; page 14 'cost no accuracy we can measure'. No loss value or curve anywhere in the text or PDF. The suggested edit did not read on into the following word 'measure.'; replaced with a full-sentence edit (replace through 'measure.').",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "\"No accuracy we can measure\" vs \"less precise ... train a little longer\"",
+      "suggested_edit": "autocast. Together they are two lines. They lower precision slightly; in our run the training loss at step [N] was [value] against [value] in float32. [Replaces the text through \"measure.\"]"
+    },
+    {
+      "index": 18,
+      "verdict": "ADJUSTED",
+      "reason": "250/175 = 1.4286, below the stated 1.5-3x; no source for the range in the post. Real but narrow miss (1.43 against 1.5) in one limitation bullet, and the range is consistent with the reference run (SEARCH RESULTS item 7: 3.0x from TF32), so the impact is modest.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "TF32 \"expect 1.5–3×\" vs the post's measured 1.43×",
+      "suggested_edit": "Capped by memory bandwidth, so expect far less than the datasheet ratio on a real training loop (1.43× here), not"
+    },
+    {
+      "index": 19,
+      "verdict": "ADJUSTED",
+      "reason": "Recomputed: 75 + 10 = 85 and 70 + 10 + 5 = 85; kickers on pages 7, 9, 11 are MEMORY TRAFFIC, MEMORY TRAFFIC, NICE NUMBERS. PDF page 13 shows no bars and only torch.compile in green (possibly an export problem, but the PDF is what readers get). The suggested edit left the rest of the sentence dangling; replaced with a full-sentence edit.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "\"Three memory-traffic changes\" vs two sections labelled MEMORY TRAFFIC",
+      "suggested_edit": "Of the 170 ms saved, 85 ms came from the two precision changes, 80 ms from the two memory-traffic changes and 5 ms from vocabulary padding. [Replaces the whole sentence through \"memory-traffic changes.\"]"
+    },
+    {
+      "index": 20,
+      "verdict": "CONFIRMED",
+      "reason": "Recomputed: 95/85 = 1.118 (12% faster); (95-85)/95 = 10.5% less time. Table says 1.12x, text says '10% faster'. All other table cells reproduce (1.43, 1.06, 1.74, 1.12, 1.06; 1.52, 2.63, 2.94, 3.125).",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Flash attention \"10% faster\" vs 1.12× in the table; mixed conventions",
+      "suggested_edit": "1.12× (12% faster), and the loss curve is unchanged apart from floating-point noise."
+    },
+    {
+      "index": 21,
+      "verdict": "CONFIRMED",
+      "reason": "By ratio torch.compile leads (1.74 against 1.43); by time saved TF32 leads (75 ms against 70 ms, both printed in the page 13 chart). True on one measure only.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "torch.compile \"largest single gain\" vs TF32 saving more milliseconds",
+      "suggested_edit": "1.74× from one line, the largest single ratio in the loop (TF32 saved slightly more in absolute terms, 75 ms against 70 ms)."
+    },
+    {
+      "index": 22,
+      "verdict": "CONFIRMED",
+      "reason": "PDF: page 2 'model(x, y)', pages 3 and 6 'model(x.to(device), y.to(device))'; page 8 'GPT(config)' with no config instance shown; page 12 'n_layers' and 'n_head'; page 1 'activations, parameters and weights' against page 3 'weights, activations, gradients'.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Names differ between listings: GPT(config) vs GPTconfig, model(x, y), n_layers vs n_head",
+      "suggested_edit": "model = GPT(GPTconfig()).to(device)"
+    },
+    {
+      "index": 23,
+      "verdict": "ADJUSTED",
+      "reason": "Recomputed: 12 x 1024 x 1024 = 12,582,912 against 1024 x 50,257 = 51,463,168 (4.1x). Claim is false on the post's own figures. The suggested replacement is only true above T = 256 (12T^2 > 3072T) and the timed T is not stated, so the edit is scoped to the stated T.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Attention matrix called largest temporary tensor; logits are larger by the post's own sizes",
+      "suggested_edit": "At T = 1024 the attention matrix is the largest temporary tensor inside each transformer block."
+    },
+    {
+      "index": 24,
+      "verdict": "ADJUSTED",
+      "reason": "Reproduced: page 5 forecasts a gain from moving fewer bytes, page 6 reports 175 to 165 ms and 'should have helped more', page 14 says 'That one number predicts the rest'. The suggested edit stated the trips explanation as established, which the finding itself says is not isolated; softened.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Memory-bound diagnosis fails its own first prediction (autocast)",
+      "suggested_edit": "The TF32 result was the first clue, and the autocast result revised it: halving the bytes barely helped, which suggests the limit is less how many bytes move than how many separate passes the step makes over them."
+    },
+    {
+      "index": 25,
+      "verdict": "ADJUSTED",
+      "reason": "1000/93 = 10.75 and 250/80 = 3.125 reproduce; no batch size or sequence length for either run in the post. The inference that the A100 step did more work rests on outside facts not in evidence (the batch used in the video's timing section is unconfirmed in SEARCH RESULTS item 9; relative float32 speed of the two cards is not established), so it cannot stay MAJOR. Body wording 'the faster card' and the edit's causal 'because' corrected.",
+      "severity": "MINOR",
+      "needs_verification": true,
+      "label": "Potential Concern",
+      "summary": "A100 comparison (11x vs 3.1x) lacks workload parity",
+      "body_markdown": "**Potential Concern (Comparison validity):** The post says `Karpathy's A100 went from 1000 ms to 93 ms, about 11× against our 3.1×. His float32 baseline started much slower, and the A100's roughly 2 TB/s of memory bandwidth leaves more room for each change to help.`\n\n- **Implied figure.** 1000 ms on an A100 against 250 ms on an RTX 5070 means the data-centre card was 4x slower at baseline. The post notes this (`started much slower`) but does not say why. The simplest explanation is that the A100 step did more work: a larger batch, a longer sequence, or both. The post gives neither for its own run nor for the reference run.\n- **Why it matters for the argument.** Step time in ms is only comparable at equal tokens per step. A larger batch also changes the mix: fixed per-kernel and Python overhead becomes a smaller share and matmul time a larger share, which by itself would make TF32 and the other changes look bigger. That alternative needs no appeal to bandwidth.\n- **Direction of the bandwidth argument.** The post's thesis is that a loop limited by memory gains little from cheaper arithmetic. On that reading, more bandwidth is a reason the A100 is less memory bound, which is a claim about the A100's workload, not evidence about the RTX 5070 loop. The sentence is offered as an explanation without a measurement on either card.\n- **'The pattern is the same on both cards'** rests on the per-step figures of the reference run, which are not quoted or referenced here.\n\n**Suggested Improvement:** Give batch size and sequence length for both runs and compare in tokens per second, or drop the cross-card ratio. If the reference run used a different batch, say so and remove the bandwidth explanation. Quote the reference run's per-step figures with a source if the 'same pattern' sentence is kept.\n\n**To settle:** the batch size and sequence length used in the reference run's timing section and in the author's notebook.",
+      "suggested_edit": "float32 baseline started much slower (his step processed [B × T] tokens, ours [B × T])"
+    },
+    {
+      "index": 26,
+      "verdict": "ADJUSTED",
+      "reason": "Reproduced: no loss value, curve or validation figure in text or PDF; page 6 concedes 'train a little longer'. Suggested edit presumed the outcome ('within the spread'); made neutral.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "No accuracy data behind 'cost no accuracy we can measure'",
+      "suggested_edit": "Together they are two lines. In our runs the loss after [N] steps was [value] with them and [value] without, against a run-to-run spread of [value]."
+    },
+    {
+      "index": 27,
+      "verdict": "ADJUSTED",
+      "reason": "All six times are multiples of 5 ms and the baseline is '~250'; under rounding to 5 ms, 85 to 80 spans a true change of about 0 to 10 ms. 393 x 128 = 50,304 checks. SEARCH RESULTS item 7: the reference video's own step is 96 to 93 ms (about 3%), and no source was found for 'about 30%' or 'PyTorch 2.3.1'. That the effect may be zero is a possibility, not shown, so the label is Potential Concern. Body updated with the search evidence and an unsupported 'desktop card' assumption removed.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "5 ms vocabulary gain equals the rounding step of the timings",
+      "body_markdown": "**Definitive Flaw (Measurement resolution):** The post reports `85 → 80 ms` and concludes `The model now does slightly more work and runs 6% faster.`\n\n- **Resolution.** Every step time in the post is a multiple of 5 ms. With figures rounded to that step, a 5 ms difference is one unit of resolution: the underlying change could be near zero or about 10 ms. The same applies, less severely, to the two 10 ms steps (autocast and flash attention).\n- **No spread.** The post does not say how many steps were averaged or how much a single configuration varies from step to step. On a card that also drives the display, a few ms of step-to-step variation is ordinary. Changing the vocabulary size also forces a fresh compilation, so the two timings come from separately compiled graphs.\n- **Mechanism asserted, not shown.** `GPU kernels cut matrices into tiles whose sides are powers of two` and `the leftover goes through a separate, slower pass` are stated as how the libraries work, with no reference and no isolating measurement (for example timing the classifier matmul alone at 50,257 and 50,304 columns). `Newer versions handle the leftover pass better` is likewise unsupported.\n- **Outside figure.** `Karpathy saw about 30% on PyTorch 2.3.1 and earlier` carries no reference. The chapter list of the cited video gives 96 ms before and 93 ms after the vocabulary change, about 3%, and no source was found for 30% or for the PyTorch 2.3.1 remark. If the reference gain was about 3%, the sentence explaining the difference by PyTorch version has nothing to explain.\n\n**Suggested Improvement:** Report the mean and spread over a stated number of steps for both vocabulary sizes, to at least 1 ms. If the difference is within the spread, say that the change made no measurable difference on this card and keep it as a low-cost habit, not a measured gain. Time the output-layer matmul in isolation if the tiling explanation is kept, and cite the source of the 30% figure.",
+      "suggested_edit": "The model now does slightly more work and the step time went from [mean ± spread] ms to [mean ± spread] ms over [N] steps."
+    },
+    {
+      "index": 28,
+      "verdict": "ADJUSTED",
+      "reason": "Arithmetic reproduced (12.58M against 51.46M per sequence; attention overtakes logits only above T of about 4,188). The suggested replacement ('summed over the 12 layers, the largest set') depends on the unstated timed T (false at T = 256, for example), so it is replaced by a statement that holds at any T.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Attention matrix is not the largest temporary; logits tensor is larger",
+      "suggested_edit": "The attention matrix is the one temporary tensor that grows with the square of the sequence length, and every layer creates one."
+    },
+    {
+      "index": 29,
+      "verdict": "CONFIRMED",
+      "reason": "165/95 = 1.737. The listing compiles only the model; the section names two costs (interpreter, memory trips) and reports one number; no profile or isolating run exists. nn.GELU being a single eager kernel, and the followed code using nn.GELU(approximate='tanh'), are established facts; the body correctly asks for confirmation against the notebook.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "torch.compile gain attributed to fusion without isolating it",
+      "suggested_edit": "1.74× from one line, the largest single gain in the loop. We did not separate how much of the 70 ms comes from removing Python dispatch and how much from fused kernels."
+    },
+    {
+      "index": 30,
+      "verdict": "ADJUSTED",
+      "reason": "Internal mismatch reproduced. SEARCH RESULTS items 1 and 8 confirm GDDR7 (not HBM), 12 GB desktop and 8 GB laptop part, so the 'should be checked' bullet is replaced with the confirmed facts.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Memory described (HBM, tens of GB) does not match the 8 GB test card",
+      "body_markdown": "**Definitive Flaw (Hardware description):** `HBM, the GPU's main memory, holds tens of gigabytes but sits off the compute chip` is given as the reason fusion pays off, on a card the setup lists as `one RTX 5070 (8 GB)`.\n\n- **Internal mismatch.** 8 GB against 'tens of gigabytes'. The description fits an A100-class accelerator, the card of the run the post follows, not the card measured.\n- **Terminology.** HBM (High Bandwidth Memory) is a specific stacked-memory technology found on data-centre accelerators. GeForce cards use GDDR video memory. The principle the paragraph wants (device memory is far slower to reach than caches and registers, so each extra pass over a large tensor costs a full read and write) does not depend on the memory type, so the fix is a change of wording, but the term appears in the paragraph, the diagram labels and the diagram caption.\n- **Stated capacity of the card.** The desktop RTX 5070 has 12 GB of GDDR7; 8 GB is the RTX 5070 Laptop GPU, a different part. The setup line should name the exact product, since it is the only memory figure a reader has for judging what batch size fits.\n- **`A step that goes back to HBM after every operation spends most of its time moving data`** is asserted; no measurement of time spent in data movement is shown.\n\n**Suggested Improvement:** Use 'GPU memory (VRAM)' in the text and the diagram, give the real capacity of the test card, and keep HBM only where an A100 is being discussed. Mark the 'most of its time' sentence as an expectation unless a profile is added.",
+      "suggested_edit": "main memory (VRAM), holds [capacity of the test card] GB but sits off the compute chip"
+    },
+    {
+      "index": 31,
+      "verdict": "ADJUSTED",
+      "reason": "Reproduced from the post's own page 6 ('Softmax, layer norm and the loss stay in float32', weights float32) and SEARCH RESULTS item 4 (layer_norm, softmax, cross_entropy autocast to float32; linear and matmul to the 16-bit type). The bytes were therefore not halved. bfloat16 + float32 promoting to float32 is standard type promotion. Suggested edit claimed 'much less than half', a quantity nobody measured; reworded.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "Autocast premise 'activations halved' contradicted by the post's own op list",
+      "suggested_edit": "Autocast shrinks only the outputs of the matmul-type operations; layer norm, softmax, the loss and the weights stay float32, so the data moved was not halved. That alone may explain part of the small gain, and by now a"
+    },
+    {
+      "index": 32,
+      "verdict": "ADJUSTED",
+      "reason": "Recomputed: saving 75/250 = 0.30; f = 0.30/0.875 = 0.343; non-matmul remainder 164 ms; f = 0.6 with s = 2 also gives 0.30. The 1.43x cannot separate a memory limit from a minority matmul share. A100 figures confirmed (SEARCH RESULTS item 2). The edit's last sentence claimed the later measurements separate the two readings, which they do not; removed.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "1.43x from TF32 fits Amdahl's law without any memory limit",
+      "suggested_edit": "The step as a whole gained far less than the multiply did. One number cannot say why: either matrix multiplies are a smaller share of the step time than their share of the arithmetic suggests, or they are held back by data movement."
+    },
+    {
+      "index": 33,
+      "verdict": "CONFIRMED",
+      "reason": "Searched the whole text: no batch size, timed sequence length, step count, warm-up rule (except for compile) or spread; 'PyTorch 2.x'; T = 1024 against block_size 4096. All six times are multiples of 5 ms. The time.time() bullet is hedged and unverified (not in SEARCH RESULTS); the finding does not depend on it.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Step-time protocol undefined: no batch size, sequence length, averaging or spread",
+      "suggested_edit": "Metric: wall-clock milliseconds per training step at batch size [B] and sequence length [T] ([B × T] tokens per step), mean ± spread over [N] steps after discarding the first [M]"
+    },
+    {
+      "index": 34,
+      "verdict": "ADJUSTED",
+      "reason": "Same gap reproduced as for index 33. One body statement was unsupported: that the triton-windows pin implies one specific PyTorch release (pin mapping not in SEARCH RESULTS). Reworded.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Setup omits batch size, sequence length, run count, variance and PyTorch version",
+      "body_markdown": "**Definitive Flaw (Reproducibility):** The Setup section gives model, data, hardware and metric, but not the settings that determine a per-step time.\n\n- **Batch size and sequence length:** neither is stated. The only sequence lengths in the post are `At T = 1024` (page 10) and `block_size: int = 4096` (page 12), which do not agree with each other. Milliseconds per step is meaningless without B and T; tokens per second would be the comparable figure.\n- **How many steps were timed:** the listing under `timing one step honestly` measures one step. The post does not say whether 250 ms is one step, a mean or a median, how many steps were discarded as warm-up, or what the spread was. The later differences of 10 ms and 5 ms need that spread to be credible.\n- **Software version:** `PyTorch 2.x` covers several years of releases, and page 12 states that the size of one of the five gains changed between versions. The author pins `triton-windows>=3.8,<3.9`, so the environment was evidently fixed and the exact PyTorch version can be stated. CUDA version, driver and Python version are also absent.\n- **Approximate baseline:** `~250 ms` on page 3 becomes an exact `250 ms` in the TL;DR, the table and the 3.13× ratio.\n\nA strict reader will treat the six step times as a single unreplicated run of an unknown configuration.\n\n**Suggested Improvement:** Add batch size, sequence length, optimizer, exact PyTorch/CUDA/driver versions, and the timing protocol (for example: median of N steps after discarding the first M, with min and max) to the Setup list, and report tokens per second alongside ms per step.",
+      "suggested_edit": "Metric: wall-clock milliseconds per training step at batch size [B] and sequence length [T], [median/mean] of [N] steps after [M] warm-up steps (spread ±[x] ms); PyTorch [exact version], CUDA [version]"
+    },
+    {
+      "index": 35,
+      "verdict": "ADJUSTED",
+      "reason": "250/80 = 3.125 holds for this run; the post's own text shows the multiplier varies (11x on the A100, 1.43x against an expected 1.5-3x). Real scope issue, but the subtitle directly under the title scopes it correctly, so the impact is limited. The post writes in the first person plural, so the edit uses 'Our'.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "Title promises 3x for 'Your LLM' from one card, one model, one run",
+      "suggested_edit": "5 Lines of Code That Made Our GPT-2"
+    },
+    {
+      "index": 36,
+      "verdict": "CONFIRMED",
+      "reason": "Reproduced: 'on-par performance' on page 1 has no loss figure behind it anywhere; the results report ms per step only; page 6 concedes extra training may be needed.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "'On-par performance' asserted in TL;DR; no loss figure anywhere in the post",
+      "suggested_edit": "use some tactics to reach the same loss in less time on the same hardware"
+    },
+    {
+      "index": 37,
+      "verdict": "CONFIRMED",
+      "reason": "Listing checked on PDF page 3: the batch copies, zero_grad and optimizer step sit inside the timed region, one step is timed, and page 2 shows 'model(x, y)'. The clock-resolution part is not verified (time.time() on Windows is listed as not searched); the Python version used and its release notes would settle it.",
+      "severity": "MINOR",
+      "needs_verification": true,
+      "label": "Potential Concern",
+      "summary": "Timing listing: time.time(), host-to-GPU copy in timed region, single step",
+      "suggested_edit": ""
+    },
+    {
+      "index": 38,
+      "verdict": "ADJUSTED",
+      "reason": "SEARCH RESULTS items 1 and 8 settle it: the desktop RTX 5070 has 12 GB GDDR7; 8 GB is the RTX 5070 Laptop GPU. So the hardware line is either misnamed or has the wrong memory size. Now demonstrable; body rewritten with the confirmed facts.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "'RTX 5070 (8 GB)' matches the Laptop GPU, not the 12 GB desktop card",
+      "body_markdown": "**Definitive Flaw (Hardware specification):** The setup states `one RTX 5070 (8 GB)`. The desktop GeForce RTX 5070 has 12 GB of GDDR7; the 8 GB part is the GeForce RTX 5070 Laptop GPU, a different product with a narrower memory bus and lower memory bandwidth. As written, either the product name is incomplete or the memory size is wrong. The distinction matters for a post whose only evidence is step times on this card, and whose argument turns on memory bandwidth.\n\n**Suggested Improvement:** State the exact product name (desktop or Laptop GPU), the memory size as reported by `nvidia-smi`, and, for a laptop, the power mode used.",
+      "suggested_edit": "Hardware: one [RTX 5070 desktop / RTX 5070 Laptop GPU] ([memory size as reported by nvidia-smi]). Windows, PyTorch [exact version]. Windows needs"
+    },
+    {
+      "index": 39,
+      "verdict": "ADJUSTED",
+      "reason": "Checked each listing: TF32 and compile are setup lines, flash attention replaces four lines in the model, vocabulary is a config field; only autocast is in the loop. The suggested edit did not join the following words 'training loop and reduce'; replaced with a drop-in.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "'Five one-line changes to the training loop' does not match the listings",
+      "suggested_edit": "We apply five small changes, about one line each, to a 124M-parameter GPT-2 model's code, config and"
+    },
+    {
+      "index": 40,
+      "verdict": "ADJUSTED",
+      "reason": "Text and PDF confirmed. The points are real but pedantic ('every tensor' excluding integer inputs; 'far more precision than training needs' against pages 5-6 keeping weights and some ops in float32), so this is a Potential Concern, not a demonstrable error.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "Baseline paragraph: 'every tensor is float32' and 'far more precision than training needs'",
+      "suggested_edit": "Every floating-point tensor in this loop (weights, activations, gradients) is float32."
+    },
+    {
+      "index": 41,
+      "verdict": "CONFIRMED",
+      "reason": "PDF page 1: 'activations, parameters and weights'; page 3: 'weights, activations, gradients'. Weights are parameters; the lists differ.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "'Parameters and weights' listed as separate things; gradients omitted",
+      "suggested_edit": "The default state: weights, activations and gradients are all represented in float32."
+    },
+    {
+      "index": 42,
+      "verdict": "ADJUSTED",
+      "reason": "PDF confirms 'modfications' and the wording. The suggested edit did not join the rest of the sentence ('capabilities of modern GPUs can significantly reduce'); replaced with a drop-in.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Typo 'modfications' and tangled sentence in TL;DR second paragraph",
+      "suggested_edit": "These simple yet powerful modifications that fully utilize the"
+    },
+    {
+      "index": 43,
+      "verdict": "CONFIRMED",
+      "reason": "PDF page 1: no comma before 'making' and no full stop after 'faster'. Edit is a drop-in.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Highlighted TL;DR sentence lacks comma and full stop",
+      "suggested_edit": "on a single RTX 5070, making each training step about 3× faster."
+    },
+    {
+      "index": 44,
+      "verdict": "CONFIRMED",
+      "reason": "Recomputed: 1/((1-p)+p/8) = 1.43 gives p = 0.34; p = 0.30 with an infinitely fast multiply gives 1/0.7 = 1.43; p = 0.5 at 8x gives 1.78. No profiler, utilisation or bandwidth measurement in the post. The alternative is consistent with the document's numbers.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Memory-bound diagnosis not separated from Amdahl's law or overhead",
+      "suggested_edit": "waiting for data or doing work TF32 does not touch (non-matmul operations, kernel launches, Python overhead). The gap alone cannot tell these apart; [profiler breakdown of the baseline step] shows which one dominates."
+    },
+    {
+      "index": 45,
+      "verdict": "ADJUSTED",
+      "reason": "250/175 = 1.4286 is below 1.5-3x; no source given. Real but a narrow miss in one bullet (see index 18); lowered.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Stated 1.5–3× expectation excludes the post's own 1.43× result",
+      "suggested_edit": "Capped by the share of the step that is matmul and by how fast data reaches the cores, so expect a modest gain on a real training loop (1.43× here), not"
+    },
+    {
+      "index": 46,
+      "verdict": "CONFIRMED",
+      "reason": "Reproduced: three accuracy statements, no loss data, page 6 concedes a possible cost. TF32 for matmul being off by default in PyTorch is established (and consistent with SEARCH RESULTS item 3: 'highest' is the default).",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "No-accuracy-cost claims have no loss data and conflict with page 6",
+      "suggested_edit": "A sensible default on those cards for transformer training. It is one line, and in our run the training loss after [N] steps was [value] against [value] for float32."
+    },
+    {
+      "index": 47,
+      "verdict": "CONFIRMED",
+      "reason": "10/175 = 5.7%, 175/165 = 1.06. No run count, spread, kernel count or profile. Page 5 forecast (move fewer bytes) failed and page 6 introduced a new cause. The cause is asserted from a single 10 ms difference.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Small autocast gain attributed to round trips without isolating evidence",
+      "suggested_edit": "different cost may dominate. One likely candidate, which we did not measure: eager PyTorch launches each small element-wise"
+    },
+    {
+      "index": 48,
+      "verdict": "ADJUSTED",
+      "reason": "156/19.5 = 8.0. SEARCH RESULTS item 2 confirms both A100 datasheet figures, so no outside check remains. The card mismatch (A100 ceiling, RTX 5070 measurement) stands from the text. Edit reworded so it does not speak for what the author searched.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "8× ceiling taken from A100 datasheet, applied to an RTX 5070",
+      "suggested_edit": "156 for TF32, an 8× ceiling on matmul throughput for that card; treat it as a rough guide for the RTX 5070, for which we have no equivalent figure."
+    },
+    {
+      "index": 49,
+      "verdict": "CONFIRMED",
+      "reason": "No source or measurement for the 60% figure anywhere in the post or its references: confirmed. Where the figure comes from is not verified (listed as not searched); the cited video at the TF32 section would settle the attribution.",
+      "severity": "MINOR",
+      "needs_verification": true,
+      "label": "Potential Concern",
+      "summary": "Unsourced 60% tensor-core utilisation figure",
+      "suggested_edit": "tuned training code, [source] notes, rarely keeps the tensor cores busy more than about 60% of"
+    },
+    {
+      "index": 50,
+      "verdict": "ADJUSTED",
+      "reason": "The post's page 6 says layer norm stays float32, and SEARCH RESULTS item 4 confirms layer_norm and softmax autocast to float32 while linear and matmul autocast to the 16-bit type; bfloat16 + float32 promoting to float32 is standard. So 'the forward pass stores activations in 16 bits' overstates it; no outside check remains. The suggested edit did not join ' is half as much data to move'; fixed.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "\"Every matmul input\" is 16-bit overstates what autocast does",
+      "suggested_edit": "pass runs the matrix multiplies in 16 bits instead of 32 and stores their outputs in 16 bits, so much of the matmul traffic"
+    },
+    {
+      "index": 51,
+      "verdict": "ADJUSTED",
+      "reason": "SEARCH RESULTS item 4: the PyTorch AMP docs publish explicit lists of ops that autocast to float16 and to float32. The post's statement is too strong. Unsupported speculation about the remark's origin removed from the body.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "Claim that PyTorch does not document autocast op coverage",
+      "body_markdown": "**Potential Concern (Outside fact):** `PyTorch doesn't document clearly which ops autocast converts.` The post has just told the reader exactly which ops stay in float32, and the PyTorch AMP documentation publishes explicit lists of the CUDA ops that autocast to float16 (matmul, linear, conv variants and others) and to float32 (softmax, layer_norm, cross_entropy and others); ops on neither list run in the dtype of their inputs. The statement is too strong as written.\n\n**Suggested Improvement:** Replace the limitation with a pointer to the op reference. The reference list already includes the PyTorch AMP recipe.",
+      "suggested_edit": "Which ops autocast converts is listed in the autocast op reference in the PyTorch AMP documentation; check it for any op your model relies on."
+    },
+    {
+      "index": 52,
+      "verdict": "CONFIRMED",
+      "reason": "`device` is never defined in any listing and is used both for .to(device) and device_type=device. The followed source uses a separate device_type variable (SEARCH RESULTS item 9), which supports the concern. Exact failure for 'cuda:0' or a torch.device is not in evidence; running the line with device = 'cuda:0' settles it.",
+      "severity": "MINOR",
+      "needs_verification": true,
+      "label": "Potential Concern",
+      "summary": "Autocast listing passes undefined device as device_type",
+      "suggested_edit": "with torch.autocast(device_type=\"cuda\", dtype=torch.bfloat16):"
+    },
+    {
+      "index": 53,
+      "verdict": "CONFIRMED",
+      "reason": "165/95 = 1.737. No measurement separates interpreter removal from fusion; the glossary itself says each launch 'has fixed overhead'. That matmuls are library calls not fused with neighbours, and that fusion mainly covers element-wise chains, are established.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "torch.compile gain attributed to fewer memory trips without isolating it",
+      "suggested_edit": "We did not separate the two effects, so this 70 ms is the combined saving from removing interpreter and per-op launch overhead and from fusing element-wise kernels."
+    },
+    {
+      "index": 54,
+      "verdict": "ADJUSTED",
+      "reason": "Operation count reproduced (eight if written out). nn.GELU, including approximate='tanh', running as one eager kernel is established. Whether the author's model uses the built-in module is not in the document, so the check is inconclusive for the measured loop and it cannot stay MAJOR; the author's MLP code settles it. PDF page 8 diagram shows '· 0.044' against 0.044715 in the text.",
+      "severity": "MINOR",
+      "needs_verification": true,
+      "label": "Potential Concern",
+      "summary": "GELU 'eight kernels' in eager mode does not hold for nn.GELU",
+      "suggested_edit": "Written out as separate tensor operations, this is eight kernels in eager PyTorch, and each one reads from GPU memory and writes its result back. (The built-in nn.GELU is already a single kernel; we use the expanded form here to illustrate what fusion does.)"
+    },
+    {
+      "index": 55,
+      "verdict": "CONFIRMED",
+      "reason": "Page 3 '8 GB' against page 8 'tens of gigabytes'; HBM in text, diagram and page 10. SEARCH RESULTS item 1: RTX 5070 uses GDDR7, not HBM. Edit is a drop-in and matches the evidence.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "HBM with 'tens of gigabytes' described for an 8 GB consumer RTX 5070",
+      "suggested_edit": "The GPU's main memory (VRAM: GDDR on consumer cards such as ours, HBM on data-centre cards such as the A100) holds gigabytes but sits off the compute chip"
+    },
+    {
+      "index": 56,
+      "verdict": "ADJUSTED",
+      "reason": "Arithmetic reproduced (12.6M against 51.5M per sequence; 151M over 12 layers; crossover at T above 4,188). The claim is false on the post's figures, but it is an overstated opening sentence and nothing downstream depends on it; lowered to match the other two findings on the same sentence.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Attention matrix is not the largest temporary tensor; logits are larger",
+      "suggested_edit": "The attention matrix is the one temporary tensor that grows with the square of the sequence length, and every layer creates one."
+    },
+    {
+      "index": 57,
+      "verdict": "ADJUSTED",
+      "reason": "No loss curve or value in text or PDF: confirmed. The replacement is mathematically the same computation, so the missing curve matters least here; the general quality gap is carried by the findings on the conclusions.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "'Loss curve is unchanged' asserted with no curve or loss value shown",
+      "suggested_edit": "the loss at steps [N1], [N2] and [N3] with the same seed matched the four-line version to within [X]"
+    },
+    {
+      "index": 58,
+      "verdict": "UNVERIFIED",
+      "reason": "SEARCH RESULTS item 5 confirms F.scaled_dot_product_attention is a dispatcher over three implementations; item 10 shows a PyTorch 2.2 Windows report without the flash kernel, with current wheels unconfirmed. Which back end ran on the author's machine is unknown; restricting back ends to flash only on the author's build settles it. Body softened to what the evidence supports.",
+      "severity": "MINOR",
+      "needs_verification": true,
+      "label": "Potential Concern",
+      "summary": "Flash kernel selection not confirmed on the author's Windows setup",
+      "body_markdown": "**Potential Concern (Technical accuracy / platform):** The section attributes the 10 ms gain to FlashAttention, but `F.scaled_dot_product_attention` is a dispatcher, not a single algorithm. Which implementation runs depends on the PyTorch build and the inputs. The post's setup is Windows, where at least some official builds (a PyTorch 2.2 forum report) lacked the flash kernel and fell back to another path; whether current Windows wheels include it was not confirmed. Nothing in the post confirms which kernel ran.\n\nA second point affects the attribution in the same way: this change was measured after `torch.compile` was already on, so the four-line version it is compared with was no longer running as four separate eager kernels, and the description `Each of the four lines writes that matrix to HBM, and the next line reads it back` describes the eager case, not the 95 ms state.\n\n**Suggested Improvement:** Verify the back end on the measured machine (restrict the allowed back ends to flash only and confirm the call still succeeds), report the result, and word the claim by what was verified. If the flash kernel is unavailable, describe the gain as coming from PyTorch's fused attention implementation.",
+      "suggested_edit": "On Ampere or newer with bfloat16, PyTorch can pick the flash kernel automatically when the build includes it; check which back end is used on your platform."
+    },
+    {
+      "index": 59,
+      "verdict": "ADJUSTED",
+      "reason": "Recomputed: 1.74 against 1.43 by ratio, 70 ms against 75 ms by time. The statement is true on one measure, so this is a Potential Concern (as index 21), not a demonstrable error.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "'Largest single gain' true by ratio, not by milliseconds saved",
+      "suggested_edit": "1.74× from one line, the largest relative gain in the loop (70 ms, against 75 ms for TF32)."
+    },
+    {
+      "index": 60,
+      "verdict": "CONFIRMED",
+      "reason": "(95-85)/95 = 10.5%; 95/85 = 1.118; table gives 1.12x.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "'10% faster' in text versus 1.12× in the results table",
+      "suggested_edit": "1.12× faster"
+    },
+    {
+      "index": 61,
+      "verdict": "ADJUSTED",
+      "reason": "SEARCH RESULTS item 6 confirms: 7.6x is the attention computation alone on GPT-2 (Figure 1); end to end the paper reports 3x on GPT-2. No outside check remains. Body's unevidenced 'different hardware, unfused baseline' wording replaced.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "Paper's 7.6× is for attention alone, not a training step",
+      "body_markdown": "**Potential Concern (Citation scope):** `the paper reports up to 7.6×` gives no indication of what was 7.6× faster. In Dao et al. (2022) the figure is the speedup of the attention computation alone on GPT-2 (Figure 1); the abstract reports 3× end to end for GPT-2 at sequence length 1K. The post's own measurement for the whole step is 1.12×, so the unscoped figure overstates what a reader should expect.\n\n**Suggested Improvement:** State what the figure measures and set it beside the post's own result.",
+      "suggested_edit": "(the paper reports up to 7.6× for the attention computation alone; our whole training step gained 1.12×)"
+    },
+    {
+      "index": 62,
+      "verdict": "CONFIRMED",
+      "reason": "Page 8 'the only price is compile time' against four limitations on page 9. Internal tension is in the text. SEARCH RESULTS item 9 shows the repository switches compile off because it interferes with the HellaSwag eval and generation, consistent with the limitation.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "'Always' and 'only price is compile time' against the listed limitations",
+      "suggested_edit": "For the training loop, almost always, unless debugging. The main price is compile time; see the limitations below for generation, evaluation and changing input shapes."
+    },
+    {
+      "index": 63,
+      "verdict": "ADJUSTED",
+      "reason": "Sums reproduce (85 and 85); only two sections are labelled MEMORY TRAFFIC; savings run 75, 10 and 70, 10, 5 ms, so 'behave differently' is not in the numbers; TF32 saved more ms than compile. All true, but these are classification and wording problems in one paragraph with correct arithmetic; lowered to match index 19. Edit marked as a whole-sentence replacement.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "85/85 ms split: grouping and 'behave differently' contradict the post's own numbers",
+      "suggested_edit": "Of the 170 ms saved, 85 ms came from the two precision changes, 80 ms from the two memory-traffic changes and 5 ms from vocabulary padding. [Replaces the whole sentence through \"memory-traffic changes.\"]"
+    },
+    {
+      "index": 64,
+      "verdict": "CONFIRMED",
+      "reason": "Page 6 contradicts 'predicts the rest'; 1/(0.66 + 0.34/8) = 1.42 reproduces the Amdahl reading; no profile or reordered run in the post; the 8x is an A100 figure (SEARCH RESULTS item 2).",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "'That one number predicts the rest' is contradicted by page 6",
+      "suggested_edit": "It is consistent with the rest, though it does not prove it."
+    },
+    {
+      "index": 65,
+      "verdict": "ADJUSTED",
+      "reason": "No accuracy or loss measurement anywhere; page 6 concedes a possible cost. The suggested edit ran into the following word 'measure.'; replaced with a full-sentence edit.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Conclusion 01 claims no measurable accuracy cost; no accuracy is measured",
+      "suggested_edit": "Together they are two lines; we saw no visible change in the training loss, though we did not quantify it. [Replaces the text through \"measure.\"]"
+    },
+    {
+      "index": 66,
+      "verdict": "CONFIRMED",
+      "reason": "85 to 80 ms is 5 ms (5.9% less time, 1.06x); all six times are multiples of 5 ms; no run count or spread; the tiling mechanism is stated without a measurement or source.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "6% vocabulary-padding gain rests on a 5 ms single-run difference",
+      "suggested_edit": "The model now does slightly more work and ran about 5 ms faster per step in our run ([N] steps averaged, spread [±x ms])."
+    },
+    {
+      "index": 67,
+      "verdict": "CONFIRMED",
+      "reason": "4096 x 768 = 3,145,728 against 1024 x 768 = 786,432, about 2.36M extra, roughly 126.8M. SEARCH RESULTS item 9: the followed code has block_size 1024 and n_layer. The listing does not define the GPT-2 124M model the setup names.",
+      "severity": "MAJOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Config listing has block_size 4096; GPT-2 124M uses 1024",
+      "suggested_edit": "block_size: int = 1024"
+    },
+    {
+      "index": 68,
+      "verdict": "ADJUSTED",
+      "reason": "1000/93 = 10.75. No batch size or sequence length for either run. 'Only possible if the work per step differs' and 'the slower card' assume outside facts not in evidence, so the alternative is likely but unproven; lowered and flagged. A100 bandwidth differs by variant (1,555 and 2,039 GB/s, SEARCH RESULTS item 2).",
+      "severity": "MINOR",
+      "needs_verification": true,
+      "label": "Potential Concern",
+      "summary": "11× against 3.1× compared without matching workload; bandwidth explanation unsupported",
+      "body_markdown": "**Potential Concern (comparison basis):** `Karpathy's A100 went from 1000 ms to 93 ms, about 11× against our 3.1×. His float32 baseline started much slower, and the A100's roughly 2 TB/s of memory bandwidth leaves more room for each change to help.`\n\n- **Not like for like.** A data-centre card starting four times slower per step than a consumer card suggests the steps are not the same size (not confirmed: neither configuration is stated). The post does not give the batch size or sequence length for either run, so the reader cannot compare tokens per second, which is the quantity that would be comparable.\n- **Simpler explanation not ruled out.** A larger step spends a larger share of its time in matmuls, so precision and kernel changes pay more; a small step is dominated by fixed overhead. That accounts for 11× against 3.1× without any appeal to bandwidth.\n- **Outside facts.** The A100 bandwidth figure and the 1000 → 93 ms sequence are quoted without a reference; the bandwidth differs between A100 variants.\n\n**Suggested Improvement:** Give both configurations and compare throughput in tokens per second, or present the comparison as indicative only and remove the bandwidth explanation unless it is measured.\n\n**To settle:** the batch size and sequence length used in the reference run's timing section and in the author's notebook.",
+      "suggested_edit": ""
+    },
+    {
+      "index": 69,
+      "verdict": "ADJUSTED",
+      "reason": "SEARCH RESULTS item 7: the cited video's chapter list gives 96 to 93 ms for the vocabulary change (about 3%), and no source was found for 'about 30%' or 'PyTorch 2.3.1'. The post's figure disagrees with its own cited source. Body and edit updated with the evidence.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Potential Concern",
+      "summary": "'About 30%' attributed to Karpathy; the cited video shows about 3% (96 to 93 ms)",
+      "body_markdown": "**Potential Concern (outside fact):** `Karpathy saw about 30% on PyTorch 2.3.1 and earlier. Newer versions handle the leftover pass better, so the gain is smaller but still there.` The figure has no reference. The chapter list of the cited video gives 96 ms before and 93 ms after the vocabulary change, about 3%, which also fits the 93 ms end point quoted on page 14 (a 30% gain would need a step of roughly 121 to 133 ms before it). No source was found for 30% or for the PyTorch 2.3.1 remark. If the reference gain was about 3%, the post's 6% is not smaller than it, and the sentence about newer versions has nothing to explain.\n\n**Suggested Improvement:** Give the before and after step times from the source with a timestamp or link, and either cite or remove the statement about newer versions.",
+      "suggested_edit": "about 3% (96 → 93 ms, per the video's chapter list) in his run. [Also remove or source the next sentence about newer versions.]"
+    },
+    {
+      "index": 70,
+      "verdict": "CONFIRMED",
+      "reason": "GPT-2 XL has 1600 width and 25 heads (established); 1600/25 = 64 and 768/12 = 64. In attention the head count is a batch-like axis; the matmul sides are sequence length and per-head width. 'Doesn't divide by a power of two' excludes no even number as worded.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "GPT-2 XL's 25 heads is a poor example of an awkward matmul dimension",
+      "suggested_edit": ""
+    },
+    {
+      "index": 71,
+      "verdict": "CONFIRMED",
+      "reason": "50,257 x 768 = 38,597,376; two untied matrices would give about 163M, not 124M. SEARCH RESULTS item 9 confirms weight tying in the followed code. Only the classifier use is a matmul.",
+      "severity": "MINOR",
+      "needs_verification": false,
+      "label": "Definitive Flaw",
+      "summary": "Token embedding and classifier are one tied matrix in GPT-2, not two",
+      "suggested_edit": "It also sets the size of the largest matrix in the model, which GPT-2 shares between the token"
+    },
+    {
+      "index": 72,
+      "verdict": "CONFIRMED",
+      "reason": "Conclusions name TF32, autocast, compile and flash attention; vocabulary padding is absent (confirmed from the text). Whether float16 autocast pays on a given pre-Ampere card is not verified per generation; the edit is advice to consider, and tensor-core support by generation would settle it.",
+      "severity": "MINOR",
+      "needs_verification": true,
+      "label": "Potential Concern",
+      "summary": "Conclusions cover four of five changes; pre-Ampere advice skips float16 autocast",
+      "suggested_edit": "If not, try float16 autocast with a GradScaler, then compile."
+    }
+  ]
+}

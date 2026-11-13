@@ -1,0 +1,215 @@
+{
+  "segment_id": "P2",
+  "findings": [
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Causal inference",
+      "summary": "Memory-bound diagnosis fails its own first prediction (autocast)",
+      "quote": "That one number predicts the rest.",
+      "page": 14,
+      "ledger_claims": ["K2", "K3", "K4"],
+      "checks_run": ["F2", "F4", "F5"],
+      "verification": {
+        "action": "Traced the prediction the post itself derives from the diagnosis (page 5: 'If moving bytes is the bottleneck, the next step is to move fewer of them') and compared it with the next measurement (page 6: 175 to 165 ms), then compared the definition of 'memory bound' on pages 4-5 with the bottleneck named on pages 6 and 14.",
+        "outcome": "The diagnosis as stated on pages 4-5 is about bytes moved ('every number is still a 4-byte float32', 'Capped by memory bandwidth'). It predicts a large gain from halving the bytes; the measured gain is 10 ms (1.06x). The post then replaces the bottleneck with 'the number of memory round trips', which is a different quantity (count of kernel launches and passes, not bandwidth). The TF32 number therefore did not predict the autocast result; the explanation was changed after the result."
+      },
+      "impact": "The page 14 box is the post's central argument for why the reader should trust the mechanism and carry the same reasoning to their own loop. As written, the one prediction the diagnosis makes before a measurement is contradicted by that measurement, so 'predicts the rest' does not hold and the reader is left with a diagnosis that is fitted to each result in turn.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Causal inference):** The summary box says `That one number predicts the rest.` Read against the post's own sequence, it does not.\n\n- **What the diagnosis predicts.** On pages 4-5 'memory bound' means bandwidth: `every number is still a 4-byte float32 that has to travel`, `Capped by memory bandwidth`, and the bridge sentence `If moving bytes is the bottleneck, the next step is to move fewer of them.` That is a forecast that halving the bytes will help a lot.\n- **What was measured.** Page 6: `175 → 165 ms`, with the post's own comment `Halving the activations should have helped more`. The forecast failed.\n- **What the post does next.** It introduces a second bottleneck, `the number of memory round trips`, and page 14 folds both under the single label 'memory bound'. Bytes per trip (bandwidth) and number of trips (per-kernel launch overhead and extra passes over the data) are different limits with different remedies. A loop limited by launch overhead and Python dispatch is usually called overhead bound, and it would show the same 1.43x, the same small autocast gain and the same large compile gain without any tensor core 'waiting for data'.\n- **Single ordering.** Every 'clue' comes from one ordering of the changes, each timed once. If compile were applied first, the TF32 and autocast gains would be measured against a different remainder and the story could read differently.\n\nA strict reader would say the sequence is consistent with the memory-traffic account but equally consistent with a plain overhead account, and that the TF32 ratio alone predicts neither.\n\n**Suggested Improvement:** State the diagnosis at the level the evidence supports (a hypothesis that fits the sequence), separate 'bytes moved' from 'number of kernel passes' as two candidate bottlenecks, and say plainly that the autocast result argued against the first. To make the stronger wording hold, show a profiler breakdown of one step (time in matmul kernels, element-wise kernels, and CPU-side dispatch) before and after each change, or repeat the ladder in a different order.",
+      "suggested_edit": "The TF32 result was the first clue, and the autocast result corrected it: halving the bytes barely helped, so the limit is not how many bytes move but how many separate passes the step makes over them.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.85
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Potential Concern",
+      "category": "Comparison validity",
+      "summary": "A100 comparison (11x vs 3.1x) lacks workload parity",
+      "quote": "float32 baseline started much slower",
+      "page": 14,
+      "ledger_claims": ["K1", "K2"],
+      "checks_run": ["F1", "F3", "F5"],
+      "verification": {
+        "action": "Recomputed the ratios (1000/93 and 250/80), derived the implied baseline ratio between the two cards (1000/250), and searched the whole document for the batch size and sequence length of either run.",
+        "outcome": "1000/93 = 10.75 ('about 11x' holds); 250/80 = 3.125. The implied float32 baseline is 4x slower on the A100 than on the RTX 5070 for what the post presents as the same model. A data-centre card being 4x slower per step than a consumer card is only plausible if the A100 step processed several times more tokens. Neither batch size nor sequence length is stated for either run anywhere in the post."
+      },
+      "impact": "The paragraph uses the A100 run as a second data point for the memory-bound story ('The pattern is the same on both cards') and explains the 11x versus 3.1x gap by memory bandwidth. If the two runs differ in tokens per step, the gap is explained by workload size alone and the bandwidth explanation is unsupported; a reader comparing their own card against either figure would be misled.",
+      "needs_verification": false,
+      "body_markdown": "**Potential Concern (Comparison validity):** The post says `Karpathy's A100 went from 1000 ms to 93 ms, about 11× against our 3.1×. His float32 baseline started much slower, and the A100's roughly 2 TB/s of memory bandwidth leaves more room for each change to help.`\n\n- **Implied figure.** 1000 ms on an A100 against 250 ms on an RTX 5070 means the faster card was 4x slower at baseline. The post notes this (`started much slower`) but does not say why. The simplest explanation is that the A100 step did more work: a larger batch, a longer sequence, or both. The post gives neither for its own run nor for the reference run.\n- **Why it matters for the argument.** Step time in ms is only comparable at equal tokens per step. A larger batch also changes the mix: fixed per-kernel and Python overhead becomes a smaller share and matmul time a larger share, which by itself would make TF32 and the other changes look bigger. That alternative needs no appeal to bandwidth.\n- **Direction of the bandwidth argument.** The post's thesis is that a loop limited by memory gains little from cheaper arithmetic. On that reading, more bandwidth is a reason the A100 is less memory bound, which is a claim about the A100's workload, not evidence about the RTX 5070 loop. The sentence is offered as an explanation without a measurement on either card.\n- **'The pattern is the same on both cards'** rests on the per-step figures of the reference run, which are not quoted or referenced here.\n\n**Suggested Improvement:** Give batch size and sequence length for both runs and compare in tokens per second, or drop the cross-card ratio. If the reference run used a different batch, say so and remove the bandwidth explanation. Quote the reference run's per-step figures with a source if the 'same pattern' sentence is kept.",
+      "suggested_edit": "float32 baseline started much slower because his step processed [B × T] tokens against our [B × T]",
+      "needs_external_check": true,
+      "external_check_query": "Karpathy 'Let's reproduce GPT-2 (124M)' batch size and sequence length used for the A100 step timings, and the per-step ms after TF32, autocast, torch.compile, flash attention and vocab 50304",
+      "confidence": 0.75
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Unsupported claim",
+      "summary": "No accuracy data behind 'cost no accuracy we can measure'",
+      "quote": "Together they are two lines and cost no accuracy we can measure.",
+      "page": 14,
+      "ledger_claims": ["K7", "K1"],
+      "checks_run": ["F2", "F3", "F4"],
+      "verification": {
+        "action": "Searched all 15 pages (text and PDF figures) for any loss value, loss curve, validation loss, step count or sample output, and cross-checked every accuracy statement (pages 1, 4, 6, 10, 11, 14).",
+        "outcome": "No loss number or curve appears anywhere; the only figures are step times. Page 4 says 'The results are slightly less exact', page 6 says 'Less precise than float32. We accept that for the speed and, if needed, train a little longer', and page 10 refers to a loss curve that is not shown. 'We can measure' implies a measurement that the post does not report."
+      },
+      "impact": "The title and TL;DR claim faster training, not a faster step. That step from per-step time to training time needs equal quality per step. Without it the 3x is a throughput figure only, and the page 6 remark about training longer concedes that the per-step saving may be partly paid back.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Unsupported claim):** Conclusion 01 says `Together they are two lines and cost no accuracy we can measure.` The same wording appears on page 4 (`Always on those cards. It is one line and costs no accuracy we can measure.`).\n\n- **No measurement is reported.** The post contains six step times and nothing else. `the training loss looks no different` (page 4) and `the loss curve is unchanged apart from floating-point noise` (page 10) are descriptions of plots the reader cannot see.\n- **The post argues against itself.** Page 6 lists as a limitation of autocast: `Less precise than float32. We accept that for the speed and, if needed, train a little longer.` Training longer is an accuracy cost expressed in steps; it cannot sit beside 'no accuracy cost' in the conclusion.\n- **The test described is insensitive.** The data is Tiny Shakespeare at about 338k tokens with a 124M-parameter model. Training loss on a set that small falls mainly through memorisation, so two runs can 'look no different' on training loss while differing where it matters. No held-out loss is mentioned. Runs with different numerics also diverge step by step, so 'unchanged apart from floating-point noise' needs a tolerance and a seed policy to mean anything.\n- **Scope.** 'Always on those cards' generalises from one small model on one dataset.\n\n**Suggested Improvement:** Report, for the baseline and for each rung, training and validation loss at a fixed step count with the same seed (one small table or an overlaid plot is enough), and state the run-to-run spread from repeating the baseline. Then word the conclusion to that evidence. If the runs were not kept, say that loss was only inspected by eye and remove 'we can measure'.",
+      "suggested_edit": "Together they are two lines. In our runs the loss after [N] steps was [value] with them and [value] without, a difference within the [value] run-to-run spread.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.9
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Measurement resolution",
+      "summary": "5 ms vocabulary gain equals the rounding step of the timings",
+      "quote": "The model now does slightly more work and runs 6% faster.",
+      "page": 12,
+      "ledger_claims": ["K6", "K1"],
+      "checks_run": ["F1", "F2", "F4", "F5"],
+      "verification": {
+        "action": "Listed all six step times (250, 175, 165, 95, 85, 80 ms), checked their granularity, and recomputed the range of true gains compatible with '85 to 80 ms' under rounding to the nearest 5 ms; also recomputed the multiple-of-128 arithmetic.",
+        "outcome": "All six figures are multiples of 5 ms, so they are reported to a 5 ms step (the baseline is also written '~250 ms'). A reading of 85 covers 82.5-87.5 ms and 80 covers 77.5-82.5 ms, so the true change lies anywhere between about 0 ms (82.5 to 82.5) and about 10 ms (87.5 to 77.5), i.e. roughly 0% to 11%. 85/80 = 1.0625, matching '1.06x'. No run count or spread is given. Arithmetic on the padding is correct: 393 x 128 = 50,304, which is 47 above 50,257, and 392 x 128 = 50,176 is 81 below."
+      },
+      "impact": "The fifth of the 'five lines' rests on a difference the size of the reporting resolution. A reader cannot tell whether padding the vocabulary did anything on this card, and the stated mechanism (power-of-two tiles and a slower leftover pass) is attached to an effect that may be zero. The results table row '1.06x' and the cumulative '3.13x' inherit the same uncertainty.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Measurement resolution):** The post reports `85 → 80 ms` and concludes `The model now does slightly more work and runs 6% faster.`\n\n- **Resolution.** Every step time in the post is a multiple of 5 ms. With figures rounded to that step, a 5 ms difference is one unit of resolution: the underlying change could be near zero or about 10 ms. The same applies, less severely, to the two 10 ms steps (autocast and flash attention).\n- **No spread.** The post does not say how many steps were averaged or how much a single configuration varies from step to step. On a desktop card that also drives the display, a few ms of step-to-step variation is ordinary. Changing the vocabulary size also forces a fresh compilation, so the two timings come from separately compiled graphs.\n- **Mechanism asserted, not shown.** `GPU kernels cut matrices into tiles whose sides are powers of two` and `the leftover goes through a separate, slower pass` are stated as how the libraries work, with no reference and no isolating measurement (for example timing the classifier matmul alone at 50,257 and 50,304 columns). `Newer versions handle the leftover pass better` is likewise unsupported.\n- **Outside figure.** `Karpathy saw about 30% on PyTorch 2.3.1 and earlier` carries no reference and should be checked against the source; if the reference run's last step was also a few percent, the sentence explaining the difference by PyTorch version falls away.\n\n**Suggested Improvement:** Report the mean and spread over a stated number of steps for both vocabulary sizes, to at least 1 ms. If the difference is within the spread, say that the change made no measurable difference on this card and keep it as a low-cost habit, not a measured gain. Time the output-layer matmul in isolation if the tiling explanation is kept, and cite the source of the 30% figure.",
+      "suggested_edit": "The model now does slightly more work and the step time went from [mean ± spread] ms to [mean ± spread] ms over [N] steps.",
+      "needs_external_check": true,
+      "external_check_query": "Karpathy 'Let's reproduce GPT-2 (124M)' step time before and after changing vocab_size from 50257 to 50304 (size of the reported gain)",
+      "confidence": 0.85
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Technical accuracy",
+      "summary": "Attention matrix is not the largest temporary; logits tensor is larger",
+      "quote": "The attention matrix is the largest temporary tensor in the step.",
+      "page": 9,
+      "ledger_claims": ["K5"],
+      "checks_run": ["F1", "F3"],
+      "verification": {
+        "action": "Computed the element counts per sequence at the post's own T = 1024 with 12 heads and a 50,257 vocabulary, and compared with page 4.",
+        "outcome": "One layer's attention matrix: 12 x 1024 x 1024 = 12,582,912 elements per sequence. Logits: 1024 x 50,257 = 51,463,168 elements per sequence, about 4.1x larger. The attention matrix of a single layer only overtakes the logits when 12 x T exceeds 50,257, i.e. T above about 4,188. Page 4 itself says the largest matmul is 'the classifier that turns 768 channels into 50,257 vocabulary scores'."
+      },
+      "impact": "The sentence sets up why flash attention should matter most among temporaries; as stated it is wrong at the sequence length the post uses, and it sits beside a 10 ms gain that is small for the 'largest tensor in the step'.",
+      "needs_verification": false,
+      "body_markdown": "At `T = 1024` with 12 heads, one layer's attention matrix has 12 × 1024 × 1024 ≈ 12.6M elements per sequence, while the logits have 1024 × 50,257 ≈ 51.5M, about four times as many. The claim holds only for the attention matrices of all 12 layers taken together, which is not what the sentence says.\n\nTwo related points on the same passage. First, the 95 ms starting point was measured with `torch.compile` already on, while `Each of the four lines writes that matrix to HBM, and the next line reads it back` describes eager execution; by the post's own account of fusion, the compiled graph may already merge the scale and mask steps, so the before-state is not the four round trips described. Second, the sequence length used for the timings is never stated (the config on page 12 shows `block_size: int = 4096`), so 'about a million numbers' may not describe the measured run.\n\n**Suggested Improvement:** Reword the claim, state the T used for timing, and describe the before-state as the compiled version of the four lines.",
+      "suggested_edit": "The attention matrices are, summed over the 12 layers, the largest set of temporary tensors in the step.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.8
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Potential Concern",
+      "category": "Causal attribution",
+      "summary": "torch.compile gain attributed to fusion without isolating it",
+      "quote": "1.74× from one line, the largest single gain in the loop.",
+      "page": 8,
+      "ledger_claims": ["K4", "K2"],
+      "checks_run": ["F1", "F2", "F4", "F5"],
+      "verification": {
+        "action": "Recomputed the ratio, traced which calls in the page 3 timed region are covered by the page 8 listing, and looked for any measurement that separates the two costs the post names (interpreter, memory round trips).",
+        "outcome": "165/95 = 1.737, so '1.74x' holds, and 165 - 95 = 70 ms. The listing compiles only the model (model = torch.compile(model)); optimizer.zero_grad() and optimizer.step() in the timed region are not passed to the compiler and stay as ordinary Python-driven calls. The post names two removed costs but reports one number; there is no profiler output, kernel count, or run that removes one cost and not the other. The warm-up rule ('start timing from the second step') is stated only for the compiled run."
+      },
+      "impact": "K4 is the largest rung of the ladder and the main support for the memory-traffic story on pages 8 and 14 ('torch.compile gains a lot because it cuts the trips'). If most of the 70 ms is Python and per-kernel launch overhead and not data movement, the page 14 diagnosis is wrong in kind, and the advice transfers differently: overhead savings shrink as batch size grows, fusion savings do not.",
+      "needs_verification": false,
+      "body_markdown": "**Potential Concern (Causal attribution):** The measurement `165 → 95 ms` is clear. The reason given for it is not isolated.\n\n- **Two causes, one number.** The section says compile removes `The Python interpreter` and `Repeated trips to memory`, then the diagram, the paragraph on HBM, and page 14 (`because it cuts the trips`) assign the gain to the second. Nothing in the post separates them. On a small step (Tiny Shakespeare, an 8 GB card, batch size not given), CPU-side dispatch and per-kernel launch cost can be a large share of 165 ms; that reading explains the gain with no change in bytes moved.\n- **The worked example may not apply to this model.** The GELU is described as `about eight small operations` and `Eager PyTorch launches eight kernels`. That is true if the formula is written out by hand in Python. If the model uses PyTorch's built-in GELU module with the tanh approximation, as the code the post says it follows does, eager mode runs it as one operation and there is nothing for the compiler to fuse there. The post does not show its MLP code, so the reader cannot tell which case was measured. This point should be confirmed against the notebook.\n- **What stays uncompiled.** `optimizer.step()` and `optimizer.zero_grad()` are inside the timed region and outside the compiled model. Their cost is a fixed part of the 95 ms and of every later rung; whether a fused optimizer implementation was used is not stated.\n- **Warm-up asymmetry.** The post says to discard the first step for the compiled run. It does not say whether first-step effects (library initialisation, allocator growth) were excluded from the 250, 175 and 165 ms figures, or how many steps each figure averages.\n- **`This is the cost autocast couldn't reach`** is the conclusion restated, not a result.\n\n**Suggested Improvement:** Add a profile of one step before and after compile (number of GPU kernels launched, time in kernels against CPU time). A run with a compile backend that removes Python dispatch but does not fuse kernels would split the 70 ms between the two causes. Show the MLP code so the GELU example can be checked, state the optimizer configuration, and give the warm-up and averaging rule once for all rungs.",
+      "suggested_edit": "1.74× from one line, the largest single gain in the loop. We did not separate how much of the 70 ms comes from removing Python dispatch and how much from fused kernels.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.75
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Hardware description",
+      "summary": "Memory described (HBM, tens of GB) does not match the 8 GB test card",
+      "quote": "main memory, holds tens of gigabytes but sits off the compute chip",
+      "page": 8,
+      "ledger_claims": ["K4", "K2"],
+      "checks_run": ["F3", "F6"],
+      "verification": {
+        "action": "Cross-checked the page 8 memory description against the hardware stated in the setup on page 3 and against every other mention of the card (pages 1, 2, 13, 15).",
+        "outcome": "Page 3 states 'one RTX 5070 (8 GB)'. Page 8 explains the measured gain by a main memory that 'holds tens of gigabytes' and calls it HBM, and the diagram labels the memory block 'HBM'. 8 GB is not tens of gigabytes, so the description is of a different class of card from the one measured. HBM is the stacked memory used on data-centre accelerators; consumer GeForce cards use GDDR memory, so the term is also wrong for this card (flagged for outside confirmation together with the 8 GB figure)."
+      },
+      "impact": "This paragraph is the stated mechanism for the largest gain ('Fusion matters this much because of where the data lives'). It is written as fact about the reader's hardware but describes a data-centre part, which weakens the explanation for the card the timings come from and will be repeated by readers as a property of consumer GPUs.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Hardware description):** `HBM, the GPU's main memory, holds tens of gigabytes but sits off the compute chip` is given as the reason fusion pays off, on a card the setup lists as `one RTX 5070 (8 GB)`.\n\n- **Internal mismatch.** 8 GB against 'tens of gigabytes'. The description fits an A100-class accelerator, the card of the run the post follows, not the card measured.\n- **Terminology.** HBM (High Bandwidth Memory) is a specific stacked-memory technology found on data-centre accelerators. GeForce cards use GDDR video memory. The principle the paragraph wants (device memory is far slower to reach than caches and registers, so each extra pass over a large tensor costs a full read and write) does not depend on the memory type, so the fix is a change of wording, but the term appears in the paragraph, the diagram labels and the diagram caption.\n- **Stated capacity of the card.** The '(8 GB)' figure itself should be checked against the manufacturer's specification for the exact model used (desktop or laptop variant), since it is the only memory figure a reader has for judging what batch size fits.\n- **`A step that goes back to HBM after every operation spends most of its time moving data`** is asserted; no measurement of time spent in data movement is shown.\n\n**Suggested Improvement:** Use 'GPU memory (VRAM)' in the text and the diagram, give the real capacity of the test card, and keep HBM only where an A100 is being discussed. Mark the 'most of its time' sentence as an expectation unless a profile is added.",
+      "suggested_edit": "main memory (VRAM), holds [capacity of the test card] GB but sits off the compute chip",
+      "needs_external_check": true,
+      "external_check_query": "NVIDIA GeForce RTX 5070 memory size and memory type (desktop and laptop variants): GDDR7 or HBM",
+      "confidence": 0.8
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Potential Concern",
+      "category": "Causal attribution",
+      "summary": "Autocast premise 'activations halved' contradicted by the post's own op list",
+      "quote": "Halving the activations should have helped more, but by now a",
+      "page": 6,
+      "ledger_claims": ["K3", "K2"],
+      "checks_run": ["F1", "F2", "F5"],
+      "verification": {
+        "action": "Compared the premise in the MEASURED box with the description of autocast on the same page and with the page 5 lead, traced which tensors in a GPT-2 block the post itself says stay float32, and recomputed the percentage.",
+        "outcome": "Page 6 states 'Softmax, layer norm and the loss stay in float32' and that the weights stay float32. So by the post's own account the layer-norm outputs, the softmax, the loss computation and all weights are not halved; only the outputs of the matmul-type operations are. The premise that the activations were halved is therefore not what the post describes. Autocast also has to insert a conversion wherever a float32 tensor meets a 16-bit operation and back, which adds operations. 165/175 = 0.943, a 5.7% time reduction (1.06x), on figures reported to a 5 ms step with no spread."
+      },
+      "impact": "The inference 'bytes were halved, the gain was small, therefore the count of trips is the bottleneck' is the bridge from the TF32 diagnosis to the torch.compile explanation. If only part of the data was halved and extra conversions were added, a small gain says little about whether bytes or trips limit the step, and the bridge does not carry.",
+      "needs_verification": false,
+      "body_markdown": "**Potential Concern (Causal attribution):** The box reads `Only 6%. Halving the activations should have helped more, but by now a different cost dominates.` The conclusion that a different cost dominates depends on the bytes really having been halved.\n\n- **The post's own description says otherwise.** A few lines above: `Softmax, layer norm and the loss stay in float32`, and `The weights stay float32`. In a GPT-2 block every sub-layer is preceded by a layer norm, so the tensors entering each attention and MLP sub-layer are float32 by that description, and the float32 weights must be converted for each 16-bit matmul. The largest tensor in the step, the logits, is 16-bit only until the loss, which the post says runs in float32. The lead on page 5, `The forward pass stores activations in 16 bits instead of 32`, overstates what the op-by-op account on page 6 allows.\n- **Residual stream (to confirm).** Under PyTorch's type promotion, adding a 16-bit sub-layer output to a float32 residual gives float32, in which case the residual stream stays float32 throughout. This is worth checking in the notebook by printing the dtype of the block input and output inside the autocast region.\n- **Simpler reading of the 10 ms.** Part of the data shrank, conversions were added, and the matmuls were already on the reduced-precision tensor-core path because TF32 was applied first. That explains a small gain without any statement about round trips. The result is also order dependent: autocast measured before TF32 would show a different number.\n- **Size of the effect.** 10 ms is two reporting steps on figures rounded to 5 ms, with no run-to-run spread.\n\n**Suggested Improvement:** Replace the premise with what was observed, list which tensors became 16-bit (print dtypes at the block input, after layer norm, after the MLP, and at the logits), and present 'the number of round trips' as a hypothesis that the next section tests. Report autocast without TF32 as a control if the notebook allows.",
+      "suggested_edit": "Autocast shrinks only the matmul inputs and outputs; layer norm, softmax, the loss and the weights stay float32, so much less than half the data moved was removed. That alone may explain the small gain, and by now a",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.75
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Causal inference",
+      "summary": "1.43x from TF32 fits Amdahl's law without any memory limit",
+      "quote": "So the cores spend their time waiting for data, not doing arithmetic: the loop is memory bound.",
+      "page": 4,
+      "ledger_claims": ["K2"],
+      "checks_run": ["F1", "F3", "F4", "F5"],
+      "verification": {
+        "action": "Recomputed the ratio and solved the fixed-fraction (Amdahl) relation for the share of the step that would have to be matmul if those matmuls received the full 8x; checked the origin of the 8x ceiling and the consistency of the 1.5-3x range on page 5 with the post's own result.",
+        "outcome": "250/175 = 1.4286; time saved is 75 ms, 30% of the step. If a fraction f of the step is sped up by a factor s, the saving is f(1 - 1/s). With s = 8: f = 0.30/0.875 = 0.343. So the result is exactly what one would see if matmuls were about 34% of the baseline step and got the full 8x, leaving about 164 ms of non-matmul time, with no core waiting on memory. Equally, f = 0.6 gives s = 2. The single ratio cannot separate these cases. The 8x ceiling is taken from the A100 datasheet (19.5 vs 156 TFLOPS) and applied to an RTX 5070. Page 5 says to 'expect 1.5-3x on a real training loop'; the post's own 1.43x is below that range."
+      },
+      "impact": "This sentence is the post's central diagnosis (K2) and every later explanation is hung on it. The reader is told a single ratio proves a memory limit when it is equally the signature of a step in which matmuls are a minority of the time. A reader who applies the rule 'TF32 well under 8x means memory bound' to their own loop will misdiagnose it.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Causal inference):** From `1.43×, not 8×` the post concludes `So the cores spend their time waiting for data, not doing arithmetic: the loop is memory bound.` The conclusion does not follow from the number.\n\n- **Amdahl's law gives the same number.** TF32 only touches matmuls (the post's own limitation: `Matmuls only. Layer norms, softmax, GELU and the optimizer are untouched`). A 30% saving is what a full 8x on about 34% of the step produces: 0.343 × (1 − 1/8) = 0.30. Under that reading about 164 of the remaining 175 ms is non-matmul work (element-wise operations, normalisation, the loss, the optimizer, Python dispatch, kernel launches), which is also what the later 70 ms compile gain suggests. No idle tensor cores are needed to explain it.\n- **Tension with the section lead.** `Most of a training step is matrix multiplication` and `in GPT-2 they are most of the work` are assertions about operation counts, not measured shares of wall time. If matmuls were most of the time, the measured saving implies they sped up by about 2x or less, which then needs its own explanation; the post gives no measurement to choose between the two readings.\n- **The ceiling is from another card.** 19.5 and 156 TFLOPS are A100 datasheet peaks, the second for tensor cores and the first for ordinary float32 units. The ratio on an RTX 5070 is not given, so the '8×' the result is measured against is not established for the test hardware.\n- **Unsourced figure.** `rarely keeps the tensor cores busy more than about 60% of the time` has no reference and no measurement on this card.\n- **Own range missed.** `expect 1.5–3× on a real training loop` sits beside a measured 1.43×.\n- **What is in the timed region.** The step timed on page 3 includes the optimizer update, gradient zeroing and the host-to-device copy of the batch, none of which TF32 touches; they dilute the ratio further.\n\n**Suggested Improvement:** Present 'memory bound' as one hypothesis. To support it, show a per-operation profile of the baseline step (share of time in matmul kernels against everything else) and the time of an isolated large matmul with TF32 off and on for this card. If the matmul alone speeds up several-fold while the step gains 1.43x, the limit is the non-matmul share, not memory. Change the expected range to include the post's own result.",
+      "suggested_edit": "The step as a whole gained far less than the multiply did. One number cannot say why: either matrix multiplies are a smaller share of the step time than their share of the arithmetic suggests, or they are held back by data movement. The next measurements help separate the two.",
+      "needs_external_check": true,
+      "external_check_query": "NVIDIA A100 datasheet peak FP32 TFLOPS and peak TF32 tensor-core TFLOPS; source for 'tensor cores utilised about 60% of the time' in well-tuned training",
+      "confidence": 0.85
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Reproducibility",
+      "summary": "Step-time protocol undefined: no batch size, sequence length, averaging or spread",
+      "quote": "Metric: wall-clock milliseconds per training step",
+      "page": 3,
+      "ledger_claims": ["K1", "K6", "K3"],
+      "checks_run": ["F1", "F2", "F3", "F4"],
+      "verification": {
+        "action": "Searched the whole document for batch size, sequence length used in timing, number of steps or runs averaged, warm-up rule, variance, and exact PyTorch version; inspected the timing listing line by line; checked the granularity of the six reported figures and recomputed the headline ratio.",
+        "outcome": "None of batch size, timed sequence length, averaging rule or spread appears. The only sequence lengths mentioned are 'T = 1024' in an explanation (page 10) and 'block_size: int = 4096' in the config (page 12), which disagree. The listing prints one step's time; the reported figures are all multiples of 5 ms and the baseline is '~250 ms', so they are rounded readings of an unstated number of steps. The version is 'PyTorch 2.x' although page 12 says the vocabulary gain depends on the version. The timed region includes x.to(device) and y.to(device), zero_grad and the optimizer step. 250/80 = 3.125."
+      },
+      "impact": "Every number in the post, and the 3x headline, depends on this protocol. Without tokens per step a reader cannot reproduce 250 ms or compare it with their own loop or with the A100 run; without a spread the three smallest rungs (10, 10 and 5 ms) cannot be told from noise; and the differing listings mean the reader does not know what was timed.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Reproducibility):** The metric is defined as `wall-clock milliseconds per training step`, but the step is never defined.\n\n- **Work per step is unknown.** Step time scales with batch size × sequence length. Neither is given. The config shows `block_size: int = 4096`, the attention section reasons at `T = 1024`, and an 8 GB card constrains both. Tokens per second would make the figure portable.\n- **One printed step, rounded results.** The listing prints a single step. The post does not say how many steps were averaged, whether the first steps were discarded for every rung (the rule is stated only for `torch.compile`), or how much steps vary. All six results are multiples of 5 ms.\n- **What sits inside the timer.** `model(x.to(device), y.to(device))` puts the host-to-device copy of the batch inside the timed region, together with `optimizer.zero_grad()` and `optimizer.step()`. These are legitimate parts of a step, but they are untouched by four of the five changes and should be named, since the argument reads each gain as a property of the forward and backward pass. The TL;DR baseline line is `logits, loss = model(x, y)`, which differs from this listing.\n- **Clock.** `time.time()` is the system wall clock; its resolution on Windows has historically been coarse (on the order of milliseconds to about 15 ms depending on the Python version) and it can be adjusted while running. `time.perf_counter()` is the usual choice for intervals. Whether this affects these readings depends on the Python version used, which is not stated.\n- **Other unstated conditions.** Exact PyTorch and CUDA versions, whether the card also drives the display, and whether the float32 baseline fits in the card's memory without the driver spilling into system memory (which on Windows slows a step sharply and would inflate the baseline and the headline ratio).\n- **Headline.** 250/80 = 3.125 is a per-step throughput ratio for this configuration; 'train 3x faster' additionally needs equal progress per step (see the accuracy comment).\n\n**Suggested Improvement:** Add one setup line with batch size, sequence length, optimizer, exact versions, steps discarded and steps averaged, and report each rung as mean ± spread in ms and in tokens per second. Use the same model call in the TL;DR and the listing, and time with `time.perf_counter()`.",
+      "suggested_edit": "Metric: wall-clock milliseconds per training step at batch size [B] and sequence length [T] ([B × T] tokens per step), mean ± spread over [N] steps after discarding the first [M]",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.85
+    }
+  ]
+}

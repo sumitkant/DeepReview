@@ -1,0 +1,215 @@
+{
+  "segment_id": "global-consistency",
+  "findings": [
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Inconsistent causal account",
+      "summary": "Bottleneck told two ways: bytes moved (pages 3-5) vs number of trips (pages 6, 14)",
+      "quote": "Getting 1.4× from TF32 instead of 8× is the diagnosis: the loop is memory",
+      "page": 14,
+      "ledger_claims": ["K2", "K3", "K4"],
+      "checks_run": ["F2", "F3", "F5"],
+      "verification": {
+        "action": "Collected every statement of the bottleneck (pages 3, 4, 5, 6, 7, 14) and compared what each one says limits the step and what it predicts for the next change.",
+        "outcome": "Pages 3 to 5 name the volume of data: `four bytes that have to travel across the memory bus`, `every number is still a 4-byte float32 that has to travel`, `Capped by memory bandwidth`, `If moving bytes is the bottleneck, the next step is to move fewer of them`. That account predicts a large gain from halving the activations. Page 6 reports 175 to 165 ms and says `Halving the activations should have helped more, but by now a different cost dominates`, naming the number of per-operation trips. Page 14 then says the TF32 number `predicts the rest`, including that `Autocast gains little`. The page 4 diagnosis predicted the opposite of the autocast result, and `by now` implies the bottleneck changed, although TF32 does not change the number of kernel launches, so the per-trip cost was equally present at the 250 ms baseline."
+      },
+      "impact": "The memory-bound diagnosis (K2) is the argument the post asks the reader to take away, and the page 14 box says one number predicts all later results. As written, the post's own second measurement contradicts the first form of the diagnosis, so a reader cannot tell which bottleneck (bandwidth or launch count) the post claims, or use it to predict gains on their own loop.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Inconsistent causal account):** The post gives two different bottlenecks under the single name \"memory bound\" and treats them as one.\n\n- **Bytes moved (pages 3 to 5):** `every number is still a 4-byte float32 that has to travel from GPU memory to the compute units and back`, `Capped by memory bandwidth`, and `If moving bytes is the bottleneck, the next step is to move fewer of them.`\n- **Number of trips (pages 6, 7, 14):** `Lowering precision doesn't reduce the number of those trips`, `the bottleneck is now the number of memory round trips`, `What's left is how many times the data travels.`\n\nThe first account predicts that halving the activations helps a lot. It did not (175 to 165 ms), and page 6 says so: `Halving the activations should have helped more`. Page 14 nevertheless states `That one number predicts the rest. Autocast gains little because it shrinks the data but not the number of trips`. A strict reader will note that the TF32 result, as explained on page 4, predicted a large autocast gain, and that the wording `by now a different cost dominates` implies a shift that TF32 cannot have caused, since TF32 leaves the number of kernel launches unchanged.\n\n**Suggested Improvement:** Pick one account and use it throughout. Either state on page 4 that the TF32 gap shows only that arithmetic is not the limit (without attributing it to 4-byte values), and introduce the trip-count explanation as what the autocast result then reveals; or keep the bandwidth account and say on page 14 that the autocast result corrected it. In both cases replace `That one number predicts the rest` with wording that matches the sequence actually observed.",
+      "suggested_edit": "",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.8
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Code against prose",
+      "summary": "Config block_size 4096 vs T = 1024 and GPT-2 124M",
+      "quote": "block_size: int = 4096",
+      "page": 12,
+      "ledger_claims": ["K1", "K5"],
+      "checks_run": ["F1", "F2", "F3"],
+      "verification": {
+        "action": "Cross-checked the GPTconfig listing on page 12 against the page 3 setup (`GPT-2 124M with 12 layers, 12 heads, 768 embedding size`), the page 10 statement `At T = 1024, att holds about a million numbers`, and recomputed the sizes the listing implies.",
+        "outcome": "1024 x 1024 = 1,048,576, which matches `about a million`; 4096 x 4096 = 16,777,216, which does not. A 4096-position embedding adds (4096 - 1024) x 768 = 2,359,296 parameters over the 1024-position GPT-2, so the listed config is about 126.8M parameters, not 124M. No sequence length for the timed runs is stated anywhere, so the listing is the only place a reader can look for it."
+      },
+      "impact": "A reader copying the config gets a model that is not GPT-2 124M and cannot tell which sequence length produced the 250 to 80 ms figures. Sequence length sets the attention cost, so the flash attention step (95 to 85 ms) and the headline ratio are not reproducible from the document.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Code against prose):** The config listing gives `block_size: int = 4096`, while the flash attention section reasons from `At T = 1024` and the setup describes the model as `GPT-2 124M`.\n\n- **Arithmetic:** 1024² = 1,048,576 (the post's `about a million`); 4096² = 16,777,216.\n- **Model size:** a 4096-row position embedding adds 3072 x 768 = 2,359,296 parameters, giving about 126.8M rather than 124M.\n- **Setup gap:** the sequence length and batch size used for timing are not given on page 3, so the two values cannot be reconciled from the text.\n\n**Suggested Improvement:** Make the listing match the model that was timed, and state the sequence length and batch size once in the Setup section.",
+      "suggested_edit": "block_size: int = [value used for the timed runs; 1024 if GPT-2 124M as described]",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.8
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Hardware description against setup",
+      "summary": "Memory described as tens of gigabytes of HBM vs the 8 GB RTX 5070 in the setup",
+      "quote": "main memory, holds tens of gigabytes but sits off the compute chip, so every",
+      "page": 8,
+      "ledger_claims": ["K4", "K2"],
+      "checks_run": ["F3", "F6"],
+      "verification": {
+        "action": "Compared the page 8 memory description and diagram labels with every hardware statement elsewhere: `consumer-grade RTX 5070 GPU` (page 1), `one RTX 5070 (8 GB)` (page 3), `All timings are from our own notebook on a single RTX 5070` (page 15).",
+        "outcome": "The card all timings come from is stated as 8 GB, which is not `tens of gigabytes`. The explanation and the diagram (boxes labelled HBM) describe a data-centre memory configuration, not the card measured. Separately, and not verified here: consumer GeForce cards use GDDR memory rather than HBM, and the desktop RTX 5070 is listed with 12 GB (8 GB is the laptop variant); both need an outside check."
+      },
+      "impact": "The torch.compile explanation (K4) is presented as the reason for the largest gain on this card, but it describes hardware the post did not use. A reader repeating it will state that an RTX 5070 has tens of gigabytes of HBM, and the 8 GB figure in the setup leaves it unclear which card was measured.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Hardware description against setup):** Page 8 explains the gain with `HBM, the GPU's main memory, holds tens of gigabytes but sits off the compute chip`, and the diagram labels the memory box `HBM`. The setup on page 3 says `one RTX 5070 (8 GB)` and the subtitle calls it `consumer-grade`. Eight gigabytes is not tens of gigabytes, so the explanation does not describe the card the measurements come from.\n\nTwo outside facts should be checked at the same time: whether the RTX 5070 uses GDDR rather than HBM, and whether `(8 GB)` is right for the card used (desktop and laptop variants differ).\n\n**Suggested Improvement:** Describe the memory of the card that was measured, and use a neutral term such as \"GPU memory (VRAM)\" in the text and the diagram unless the card really has HBM. Confirm the memory size in the Setup line.",
+      "suggested_edit": "main memory, holds [N] GB on this card but sits off the compute chip, so every",
+      "needs_external_check": true,
+      "external_check_query": "NVIDIA GeForce RTX 5070 memory size and type: desktop vs laptop variant, GDDR7 vs HBM",
+      "confidence": 0.75
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Contradictory accuracy statements",
+      "summary": "\"No accuracy we can measure\" vs \"less precise ... train a little longer\"",
+      "quote": "autocast. Together they are two lines and cost no accuracy we can",
+      "page": 14,
+      "ledger_claims": ["K7"],
+      "checks_run": ["F3", "F4"],
+      "verification": {
+        "action": "Listed every accuracy or quality statement in the document (pages 1, 4, 6, 10, 11, 14) and compared them with each other and with what is reported as measured.",
+        "outcome": "Page 4 says TF32 `costs no accuracy we can measure` and, two bullets earlier, `The results are slightly less exact`. Page 6 says of autocast `Less precise than float32. We accept that for the speed and, if needed, train a little longer`. Conclusion 01 on page 14 says of the two together `cost no accuracy we can measure`. The document reports no loss value, loss curve or validation number at any point, so `we can measure` has nothing behind it, and the page 6 limitation concedes a cost that the conclusion denies. Page 1 also frames the result as `on-par performance with same compute budget`, whereas the body reports the same work in less time."
+      },
+      "impact": "Conclusion 01 tells the reader to turn both precision changes on unconditionally. A reader who met the page 6 caveat will not know whether to expect a quality cost or a longer run, and the 3x headline is a per-step figure that only becomes faster training if quality per step is unchanged.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Contradictory accuracy statements):** The accuracy cost of the precision changes is stated three different ways.\n\n- **No cost:** `Always on those cards. It is one line and costs no accuracy we can measure.` (page 4) and `Together they are two lines and cost no accuracy we can measure.` (page 14).\n- **Some cost, not visible:** `The results are slightly less exact, but the training loss looks no different.` (page 4).\n- **A cost that may need more training:** `Less precise than float32. We accept that for the speed and, if needed, train a little longer.` (page 6).\n\nThe conclusion covers autocast with the first wording although its own section uses the third. No loss figure appears anywhere in the post, so the phrase `we can measure` is not backed by a reported measurement. The TL;DR phrase `achieve on-par performance with same compute budget` also does not match the body, which claims the same result with less time.\n\n**Suggested Improvement:** Use one statement throughout and tie it to a number, for example the training loss at a fixed step with and without each change. If no comparison was recorded, say in the conclusion what page 6 says.",
+      "suggested_edit": "autocast. Together they are two lines; they lower precision slightly, and in our run the training loss at step [N] was [value] against [value] in float32, so the cost is one we",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.75
+    },
+    {
+      "severity": "MAJOR",
+      "label": "Definitive Flaw",
+      "category": "Number against own measurement",
+      "summary": "TF32 \"expect 1.5–3×\" vs the post's measured 1.43×",
+      "quote": "Capped by memory bandwidth, so expect 1.5–3× on a real training loop, not",
+      "page": 5,
+      "ledger_claims": ["K2"],
+      "checks_run": ["F1", "F3"],
+      "verification": {
+        "action": "Recomputed the TF32 gain from the MEASURED box and compared it with the range given in the LIMITATIONS box of the same section and with the other mentions (table page 13, page 14).",
+        "outcome": "250 / 175 = 1.4286, reported as `1.43×` on pages 4 and 13 and `1.4×` on page 14. That is below the lower end of `1.5–3×`. The post's own training loop is the only real training loop measured, and it falls outside the range the post tells readers to expect. No source is given for the range."
+      },
+      "impact": "The range sets the reader's expectation for the first change. It is contradicted by the only data point in the post, which weakens both the advice and the argument that 1.43x is the informative number.",
+      "needs_verification": false,
+      "body_markdown": "**Definitive Flaw (Number against own measurement):** The TF32 section reports `250 → 175 ms`, which is 250 / 175 = 1.43×, then advises `expect 1.5–3× on a real training loop, not 8×`. The post's own result is below that range, and no source or second measurement supports 1.5 to 3×.\n\n**Suggested Improvement:** State the expectation from what was measured, or cite where the 1.5 to 3× range comes from and say why this run falls below it.",
+      "suggested_edit": "Capped by memory bandwidth, so expect far less than the datasheet ratio on a real training loop (1.43× here), not",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.85
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Inconsistent classification",
+      "summary": "\"Three memory-traffic changes\" vs two sections labelled MEMORY TRAFFIC",
+      "quote": "The 170 ms saved splits evenly: 85 ms from the two precision changes and 85",
+      "page": 14,
+      "ledger_claims": ["K1"],
+      "checks_run": ["F1", "F3", "F2"],
+      "verification": {
+        "action": "Recomputed the split from the chart deltas and counted the section kickers; checked the page 13 chart in the PDF against its caption.",
+        "outcome": "75 + 10 = 85 ms (TF32, autocast) and 70 + 10 + 5 = 85 ms (compile, flash attention, vocabulary), total 170 = 250 - 80, so the arithmetic holds only if vocabulary padding is counted as memory traffic. The section kickers are `OPTIMIZATION 3 · MEMORY TRAFFIC`, `OPTIMIZATION 4 · MEMORY TRAFFIC` and `OPTIMIZATION 5 · NICE NUMBERS`: two memory-traffic sections, not three, and page 11 explains padding by tile alignment, not by memory traffic. With the labels as printed the split is 85 / 80 / 5. In the PDF the page 13 chart shows labels and values but no bars, while the caption says `Green bars are the memory-traffic changes`; only `torch.compile` is coloured green in the table and chart labels."
+      },
+      "impact": "The `splits evenly` observation depends on a grouping the post's own section labels do not use, and the chart cannot be used to check which changes are meant.",
+      "needs_verification": false,
+      "body_markdown": "The even split (85 ms and 85 ms) counts vocabulary padding among `the three memory-traffic changes`, but its section is labelled `OPTIMIZATION 5 · NICE NUMBERS` and its mechanism (tile alignment) is described as different. By the section labels the split is 85 ms precision, 80 ms memory traffic, 5 ms nice numbers. The chart caption `Green bars are the memory-traffic changes` cannot settle it: in the PDF no bars are drawn, and only `torch.compile` appears in green.\n\n**Suggested Improvement:** Either relabel section 07 as a memory-traffic change and explain why, or report the split with three groups. Restore the bars in the chart or reword the caption.",
+      "suggested_edit": "Of the 170 ms saved, 85 ms came from the two precision changes, 80 ms from the two memory-traffic changes and 5",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.8
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Ratio and percentage conventions",
+      "summary": "Flash attention \"10% faster\" vs 1.12× in the table; mixed conventions",
+      "quote": "10% faster, and the loss curve is unchanged apart from floating-point noise.",
+      "page": 10,
+      "ledger_claims": ["K5", "K1"],
+      "checks_run": ["F1", "F2"],
+      "verification": {
+        "action": "Recomputed every ratio and percentage from the ms column and compared the wording in each MEASURED box with the results table.",
+        "outcome": "All table cells reproduce: 250/175 = 1.43, 175/165 = 1.06, 165/95 = 1.74, 95/85 = 1.12, 85/80 = 1.06; cumulative 250/165 = 1.52, 250/95 = 2.63, 250/85 = 2.94, 250/80 = 3.125 (shown as 3.13×, 3.1× and 3x). The one mismatch is flash attention: 95/85 = 1.118, i.e. 12% faster, while (95 - 85)/95 = 10.5% is the reduction in step time. The text uses the time reduction and calls it `faster`; the table uses the speed ratio. For autocast (5.7% less time, 6.1% faster) and vocabulary (5.9% less time, 6.3% faster) both readings round to 6%, so the convention is hidden there. The baseline is `~250 ms` on page 3 and exact `250` everywhere else, and all six times are multiples of 5 ms while ratios are given to three significant figures."
+      },
+      "impact": "The same step is reported as 10% in one place and 1.12× in another. Small, but the post's argument rests on comparing the sizes of the gains.",
+      "needs_verification": false,
+      "body_markdown": "The MEASURED box for flash attention says `10% faster`; the results table gives `1.12×` for the same 95 to 85 ms step.\n\n- **Arithmetic:** 95 / 85 = 1.118 (12% faster); (95 - 85) / 95 = 10.5% (less time per step). The text reports the second and labels it as the first.\n- **Convention:** TF32 and torch.compile are given as speed ratios (`1.43×`, `1.74×`), the other three as percentages, without saying whether a percentage is time saved or speed gained.\n- **Precision:** the baseline is `~250 ms` in its own box and an exact 250 elsewhere, and every time is a multiple of 5 ms, so ratios such as `3.13×` carry more digits than the inputs.\n\n**Suggested Improvement:** Use one convention in all five boxes (the table's ratio is the simplest) and say once how the times were rounded.",
+      "suggested_edit": "1.12× (12% faster), and the loss curve is unchanged apart from floating-point noise.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.85
+    },
+    {
+      "severity": "MINOR",
+      "label": "Potential Concern",
+      "category": "Claim against chart",
+      "summary": "torch.compile \"largest single gain\" vs TF32 saving more milliseconds",
+      "quote": "1.74× from one line, the largest single gain in the loop.",
+      "page": 8,
+      "ledger_claims": ["K4"],
+      "checks_run": ["F1", "F2"],
+      "verification": {
+        "action": "Compared the per-step savings in the page 13 chart and the ratios in the table with the three places that rank torch.compile first (pages 8, 14 and Conclusion 02).",
+        "outcome": "By ratio torch.compile is largest (1.74× against 1.43× for TF32). By milliseconds saved TF32 is largest: the chart shows `−75 ms` for TF32 and `−70 ms` for torch.compile. The results section is titled `Where the 250 ms went` and its prose counts milliseconds (`torch.compile alone saving 70 ms`, `Precision gave one big jump with TF32`), the measure on which TF32 is first."
+      },
+      "impact": "Conclusion 02 (`the biggest single gain available`) is true on one measure and false on the other that the results section itself uses; readers comparing with the chart will see TF32 as the larger saving.",
+      "needs_verification": false,
+      "body_markdown": "**Potential Concern (Claim against chart):** `the largest single gain in the loop` holds for the ratio (1.74× against 1.43×) but not for time saved, where the chart gives TF32 `−75 ms` and torch.compile `−70 ms`. Page 14 and Conclusion 02 repeat the ranking in a section that counts milliseconds.\n\n**Suggested Improvement:** Say which measure is meant wherever the ranking appears.",
+      "suggested_edit": "1.74× from one line, the largest single ratio in the loop (TF32 saved slightly more in absolute terms, 75 ms against 70 ms).",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.8
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Code listings disagree",
+      "summary": "Names differ between listings: GPT(config) vs GPTconfig, model(x, y), n_layers vs n_head",
+      "quote": "model = GPT(config).to(device)",
+      "page": 8,
+      "ledger_claims": ["K1"],
+      "checks_run": ["F2", "F3"],
+      "verification": {
+        "action": "Compared every code listing of the same object across pages 2, 3, 6, 8 and 12, in the PDF.",
+        "outcome": "Page 8 builds the model from `config`, which is never defined; the only config shown is the class `GPTconfig` on page 12 (no instance is created). The TL;DR baseline line is `logits, loss = model(x, y)` (page 2) while the timed loop and the autocast listing use `model(x.to(device), y.to(device))` (pages 3 and 6). In the config, `n_layers` is plural and `n_head` singular. The TL;DR baseline description lists `activations, parameters and weights` (parameters and weights are the same thing) while page 3 lists `weights, activations, gradients`. The vocabulary line agrees between page 2 and page 12 apart from the longer comment."
+      },
+      "impact": "Readers who copy the listings together will hit an undefined name and have to guess how the pieces fit; the differing baseline line also leaves open whether the host-to-GPU copy was inside the timed region for all runs.",
+      "needs_verification": false,
+      "body_markdown": "Listings of the same code do not agree with each other.\n\n- **Config:** page 8 uses `GPT(config)`; page 12 defines `class GPTconfig:` and no `config` instance appears anywhere.\n- **Forward call:** page 2 shows `logits, loss = model(x, y)`; pages 3 and 6 show `model(x.to(device), y.to(device))`.\n- **Field names:** `n_layers` and `n_head` in the same dataclass.\n- **Baseline description:** page 2 `activations, parameters and weights`; page 3 `weights, activations, gradients`.\n\n**Suggested Improvement:** Use one form of each line in every listing and show how the config is instantiated.",
+      "suggested_edit": "model = GPT(GPTconfig()).to(device)",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.75
+    },
+    {
+      "severity": "MINOR",
+      "label": "Definitive Flaw",
+      "category": "Claim against stated sizes",
+      "summary": "Attention matrix called largest temporary tensor; logits are larger by the post's own sizes",
+      "quote": "The attention matrix is the largest temporary tensor in the step.",
+      "page": 9,
+      "ledger_claims": ["K5"],
+      "checks_run": ["F1", "F3"],
+      "verification": {
+        "action": "Computed both tensor sizes per sequence from figures stated in the document: 12 heads (page 3), T = 1024 (page 10), 50,257 vocabulary scores (page 4).",
+        "outcome": "Attention: 12 x 1024 x 1024 = 12,582,912 values per sequence per layer. Logits: 1024 x 50,257 = 51,463,168 values per sequence, about 4.1 times larger. Page 4 itself calls the classifier output the largest matmul (`The largest is the classifier that turns 768 channels into 50,257 vocabulary scores`) and page 11 calls the embedding and classifier `the two largest matrices in the model`."
+      },
+      "impact": "A small overstatement, but it conflicts with the sizes given on pages 4 and 11 and is the opening justification for the flash attention section.",
+      "needs_verification": false,
+      "body_markdown": "With the post's own figures the logits tensor is larger than the attention matrix: 1024 x 50,257 = 51.5M values per sequence against 12 x 1024 x 1024 = 12.6M. Pages 4 and 11 already describe the classifier as the largest.\n\n**Suggested Improvement:** Limit the statement to what holds, for example the largest temporary tensor inside each block.",
+      "suggested_edit": "The attention matrix is the largest temporary tensor inside each transformer block.",
+      "needs_external_check": false,
+      "external_check_query": "",
+      "confidence": 0.7
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "thesis": "Five one-line changes (TF32, bfloat16 autocast, torch.compile, flash attention, vocabulary padding) cut the step time of a GPT-2 124M training loop from 250 ms to 80 ms (about 3x) on one RTX 5070 at no measurable accuracy cost, and the size of each gain shows the loop is memory bound, so the reader should apply the same changes to their own training loop.",
+  "claims": [
+    {
+      "id": "K1",
+      "claim": "Applying the five one-line changes in sequence reduces time per training step from 250 ms to 80 ms on a single RTX 5070, which the title and TL;DR state as training 3x faster.",
+      "quote": "training loop and reduce training time per step from 250 ms to 80 ms",
+      "page": 1,
+      "evidence": "Page 2 TL;DR ladder (250, 175, 165, 95, 85, 80 ms); page 3 setup (GPT-2 124M, Tiny Shakespeare ~338k tokens, one RTX 5070 (8 GB), Windows, PyTorch 2.x) and the timing snippet with torch.cuda.synchronize(); page 13 results table (80 ms, 3.13x vs baseline) and bar chart; page 15 'All timings are from our own notebook on a single RTX 5070'. Batch size, sequence length used for timing, number of steps or runs averaged, variance and exact PyTorch version are not given; the baseline is written as '~250 ms'.",
+      "warrant": "If each figure is a representative per-step time under one fixed configuration, 250/80 = 3.13 supports the '3x faster' headline for this model and card.",
+      "evidence_level": "measured",
+      "claim_level": "always or universal",
+      "depends_on": ["K2", "K3", "K4", "K5", "K6"]
+    },
+    {
+      "id": "K2",
+      "claim": "TF32 gives 1.43x (250 to 175 ms) against an 8x datasheet ceiling, and that gap proves the training loop is memory bound; this diagnosis is said to predict every later result.",
+      "quote": "1.43×, not 8×. That gap is the most useful number in this post.",
+      "page": 4,
+      "evidence": "Page 4: measured 250 to 175 ms; A100 datasheet figures 19.5 TFLOPS float32 and 156 TFLOPS TF32 ('an 8× ceiling'); assertion that tensor cores are rarely busy more than about 60% of the time. Page 5: 'expect 1.5–3× on a real training loop'. Page 14: 'Getting 1.4× from TF32 instead of 8× is the diagnosis' and 'That one number predicts the rest'; comparison with Karpathy's A100 run (1000 ms to 93 ms) and the A100's 'roughly 2 TB/s' bandwidth. No profiler output, memory-bandwidth measurement or GPU utilisation trace is shown, and the 8x ceiling is an A100 figure applied to an RTX 5070.",
+      "warrant": "A 1.43x gain where the matmul hardware could give 8x is taken to mean the cores wait on data rather than arithmetic, i.e. memory bandwidth and not compute limits the step.",
+      "evidence_level": "described",
+      "claim_level": "proves or causes",
+      "depends_on": []
+    },
+    {
+      "id": "K3",
+      "claim": "bfloat16 autocast halves the bytes per activation but gains only 6% (175 to 165 ms) because the dominant cost has become the number of per-operation memory round trips in eager PyTorch, which lower precision does not reduce.",
+      "quote": "Only 6%. Halving the activations should have helped more, but by now a",
+      "page": 6,
+      "evidence": "Page 6: measured 175 to 165 ms; the dtype observation (logits.dtype is torch.bfloat16, wte.weight stays torch.float32); the explanation of eager per-op kernel launches is stated without a measurement. Page 14 repeats it: 'Autocast gains little because it shrinks the data but not the number of trips'.",
+      "warrant": "If the step were limited by bytes moved, halving activation width would give a large gain; a 6% gain is taken to show the limit is the count of trips, not their size.",
+      "evidence_level": "described",
+      "claim_level": "proves or causes",
+      "depends_on": ["K2"]
+    },
+    {
+      "id": "K4",
+      "claim": "torch.compile gives 1.74x (165 to 95 ms), the largest single gain, because it removes the Python interpreter and fuses kernels so data makes one round trip to HBM instead of one per operation.",
+      "quote": "1.74× from one line, the largest single gain in the loop. This is the cost",
+      "page": 8,
+      "evidence": "Page 8: measured 165 to 95 ms. Pages 7-8: GELU worked example ('about eight small operations', '8 reads + 8 writes' vs '1 read + 1 write'), the eager-vs-compiled HBM diagram, and the description of HBM (tens of gigabytes, off-chip) versus on-chip memory (tens of megabytes). Page 14: 'torch.compile alone saving 70 ms'. The split between interpreter overhead and fusion is not measured, and no profile of kernel counts before and after is shown.",
+      "warrant": "A 70 ms drop from a change that only regroups operations, with the arithmetic unchanged, is attributed to the removed memory round trips and interpreter overhead.",
+      "evidence_level": "measured",
+      "claim_level": "proves or causes",
+      "depends_on": ["K2", "K3"]
+    },
+    {
+      "id": "K5",
+      "claim": "Replacing the four-line attention with F.scaled_dot_product_attention (flash attention) is 10% faster (95 to 85 ms), computes the same result without materialising the T×T matrix, and is a fusion torch.compile cannot find.",
+      "quote": "10% faster, and the loss curve is unchanged apart from floating-point noise.",
+      "page": 10,
+      "evidence": "Page 10: measured 95 to 85 ms; before and after code listings (pages 9-10); explanation of online softmax; 'the paper reports up to 7.6×' (Dao et al. 2022). The loss curve is referred to but not shown. Results table on page 13 gives 1.12x for the same step.",
+      "warrant": "Because flash attention does more arithmetic yet runs faster, and the output is mathematically the same, the gain is attributed to not writing and re-reading the attention matrix.",
+      "evidence_level": "measured",
+      "claim_level": "shows",
+      "depends_on": ["K2"]
+    },
+    {
+      "id": "K6",
+      "claim": "Padding the vocabulary from 50,257 to 50,304 makes the step 6% faster (85 to 80 ms) because GPU kernels tile matrices in powers of two and an odd dimension forces a slower leftover pass.",
+      "quote": "The model now does slightly more work and runs 6% faster. Karpathy saw",
+      "page": 12,
+      "evidence": "Page 12: measured 85 to 80 ms; 'Karpathy saw about 30% on PyTorch 2.3.1 and earlier'. Page 11: the tiling explanation, '50,304 is the nearest multiple of 128', 47 extra tokens. The 5 ms difference is the smallest in the post and no run-to-run variance is reported; the boundary-kernel mechanism is stated, not measured.",
+      "warrant": "A speedup from a change that adds work can only come from the kernel handling an evenly divisible dimension more efficiently.",
+      "evidence_level": "described",
+      "claim_level": "proves or causes",
+      "depends_on": []
+    },
+    {
+      "id": "K7",
+      "claim": "The speedups cost no measurable accuracy: TF32 and autocast leave the training loss looking no different, flash attention leaves the loss curve unchanged, and the padded vocabulary breaks nothing, so the faster loop reaches on-par performance.",
+      "quote": "Always on those cards. It is one line and costs no accuracy we can measure.",
+      "page": 4,
+      "evidence": "none found as data. Page 1: 'achieve on-par performance with same compute budget'. Page 4: 'the training loss looks no different'. Page 10: 'the loss curve is unchanged apart from floating-point noise'. Page 11: 'Nothing breaks'. Page 14: 'Together they are two lines and cost no accuracy we can measure'. No loss value, loss curve, validation loss or step count to a target is shown; page 6 concedes 'Less precise than float32. We accept that for the speed and, if needed, train a little longer'.",
+      "warrant": "If loss curves with and without each change coincide, then time per step is the only thing that changed and faster steps mean faster training to the same quality.",
+      "evidence_level": "asserted",
+      "claim_level": "always or universal",
+      "depends_on": []
+    }
+  ],
+  "load_bearing": ["K1", "K2", "K4", "K7"],
+  "mismatches": [
+    {
+      "id": "K1",
+      "why": "The title promises '3x Faster' for 'Your LLM' and the conclusions give general rules, but the evidence is one unreported configuration (no batch size, sequence length, run count or variance) on one model, one small dataset and one card, with an approximate '~250 ms' baseline; that supports 'shows for this setup', not a universal claim. The 3x is also per-step time, while 'train faster' needs K7, which is only asserted."
+    },
+    {
+      "id": "K2",
+      "why": "'The loop is memory bound' is stated as an established diagnosis, but the only support is one speed ratio compared with a peak-throughput ceiling from a different GPU's datasheet. Alternative causes are not ruled out: the non-matmul share of the step (Amdahl), Python and kernel-launch overhead that K3 and K4 themselves invoke, and data transfer inside the timed region. No profiler or bandwidth measurement is shown."
+    },
+    {
+      "id": "K3",
+      "why": "The cause of the small gain (per-op round trips now dominate) is asserted from a single 10 ms difference with no variance reported and no measurement of round trips; the result is also order-dependent, since autocast was applied after TF32 had already sped up the matmuls."
+    },
+    {
+      "id": "K4",
+      "why": "The 70 ms gain is measured, but its attribution to kernel fusion and fewer HBM round trips is not isolated from interpreter-overhead removal or other compiler effects; the GELU example is illustrative, not a measurement of this model."
+    },
+    {
+      "id": "K6",
+      "why": "A 5 ms (6%) difference from a single unreplicated timing is presented as a real effect with a definite mechanism (power-of-two tiling and a slower boundary pass); no variance is given and the mechanism is not demonstrated. The supporting figure attributed to Karpathy (about 30%) is unreferenced."
+    },
+    {
+      "id": "K7",
+      "why": "'Costs no accuracy we can measure' and 'Always on those cards' are universal wording with no loss numbers, curves or validation results anywhere in the post, and page 6 itself says autocast is less precise and may need longer training."
+    }
+  ]
+}

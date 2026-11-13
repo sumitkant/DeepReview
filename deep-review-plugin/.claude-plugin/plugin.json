@@ -1,0 +1,7 @@
+{
+  "name": "deep-review",
+  "version": "0.1.0",
+  "description": "Multi-stage expert review of dense documents: segment, review in parallel, verify, synthesize; then an annotated HTML report and a rewrite driven by the author's decisions.",
+  "keywords": ["review", "proofreading", "documents", "pdf"],
+  "skills": "./skills"
+}

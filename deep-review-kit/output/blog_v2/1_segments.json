@@ -1,0 +1,182 @@
+{
+  "document_type": "Technical blog post / tutorial (15-page PDF export) on GPU training-speed optimisations for a GPT-2 124M model in PyTorch, with code listings, per-step timings, a results table and a bar chart.",
+  "reader_and_goal": "An ML practitioner training a transformer on a single consumer or data-centre GPU, who will copy the five code changes into their own training loop, expect a comparable speedup, and repeat the post's explanations of why each change helps; they decide which changes to adopt and whether to trust the memory-bound diagnosis.",
+  "segments": [
+    {
+      "id": "S1",
+      "title": "Headline claim, TL;DR ladder, setup and baseline measurement (pages 1-3)",
+      "passages": [
+        "5 Lines of Code to Make Your LLM",
+        "LLMs are hard to train, primarily due to the compute involved.",
+        "We apply five one-line changes to a 124M parameter GPT-2 Model's",
+        "Baseline",
+        "1 · TF32",
+        "Model: GPT-2 124M with 12 layers, 12 heads, 768 embedding size and GPT-2",
+        "t0 = time.time()",
+        "Every tensor in this loop i.e. weights, activations, gradients — is float32."
+      ],
+      "budget": "high",
+      "why_this_budget": "The load-bearing headline K1 and the measurement method that every later number depends on are stated here, so an error or gap in setup undermines the whole post.",
+      "checks": [
+        "K1 (load-bearing, mismatch): does '3x Faster' for 'Your LLM' in the title follow from one RTX 5070 run of one model, and is the 250 ms to 80 ms claim reproducible from the setup given? List what is missing: batch size, sequence length used for timing, number of steps or runs averaged, warm-up, variance, exact PyTorch version, why the baseline is '~250 ms'.",
+        "Timing snippet: does it measure what the post says? Check that x.to(device) and y.to(device) (host-to-GPU copy) and zero_grad sit inside the timed region, that time.time() is adequate, that there is a single synchronize only at the end, and whether the snippet matches the baseline line 'logits, loss = model(x, y)' on page 2.",
+        "Hardware and data facts in the setup: 'RTX 5070 (8 GB)', 'Tiny Shakespeare (1M characters), ~338k tokens', 'Windows needs triton' with pin 'triton-windows>=3.8,<3.9', 'PyTorch 2.x'; are they correct and specific enough to reproduce?",
+        "TL;DR one-line descriptions against the body: 'Matmul operations are downcast to 16-bit floating point' (page 2) versus the page 5-6 account of autocast; 'activations, parameters and weights are all represented in float32' (parameters and weights as separate things); 'Rounds the vocabulary up to a number the GPU can split into even blocks'.",
+        "Opening framing: 'achieve on-par performance with same compute budget' and 'Most of it comes down to learning how GPU works': does the body deliver a performance (quality) comparison (ties to K7), and is 'five one-line changes' accurate given the autocast change wraps and re-indents the forward pass and the attention change replaces four lines?",
+        "Baseline paragraph: 'Thirty-two bits per number is far more precision than training needs' and 'four bytes that have to travel across the memory bus every time': is this stated as fact with support, and is it consistent with weights being kept in float32 later for full-precision updates?"
+      ]
+    },
+    {
+      "id": "S2",
+      "title": "Precision changes: TF32 and bfloat16 autocast, and the memory-bound diagnosis (pages 3-7)",
+      "passages": [
+        "TF32: a cheaper multiply, same float32 tensors",
+        "TF32 is a mode of the tensor core, the hardware unit that multiplies small",
+        "On paper the payoff is big. The A100 datasheet lists 19.5 TFLOPS for float32 and",
+        "1.43×, not 8×. That gap is the most useful number in this post.",
+        "The GPU is Ampere or newer (RTX 30-series, A100, and later).",
+        "Matmuls only. Layer norms, softmax, GELU and the optimizer are untouched.",
+        "bfloat16 autocast: half the bytes per activation",
+        "torch.autocast chooses op by op. Matrix multiplies run in bfloat16.",
+        "Only 6%. Halving the activations should have helped more, but by now a",
+        "Less precise than float32. We accept that for the speed and, if needed, train",
+        "Precision is now as low as it can safely go."
+      ],
+      "budget": "high",
+      "why_this_budget": "This segment holds the evidence for load-bearing K2 and K7 and the mismatch K3; the memory-bound diagnosis made here is the argument the rest of the post leans on.",
+      "checks": [
+        "K2 (load-bearing, mismatch): does 1.43x against an 8x ceiling establish that 'the loop is memory bound'? Test the alternatives the post does not rule out: the non-matmul fraction of the step (Amdahl's law), Python and kernel-launch overhead, host-to-device copies in the timed region; note the 8x ceiling (19.5 vs 156 TFLOPS) is an A100 datasheet figure applied to an RTX 5070, and that no profiler or utilisation measurement is shown. Check the '60% of the time' tensor-core statement for a source.",
+        "K7 (load-bearing, mismatch): 'costs no accuracy we can measure', 'Always on those cards' and 'the training loss looks no different' have no loss values or curves behind them; check against the page 6 limitation 'Less precise than float32 ... train a little longer' and 'The results are slightly less exact'.",
+        "K3 (mismatch): is 'by now a different cost dominates' (per-op round trips) supported by anything beyond the 175 to 165 ms difference? Check that 10 ms on a single run is distinguishable from noise, that the effect is order-dependent (TF32 applied first), and that 'Only 6%' matches 175 to 165 (5.7% time, 1.06x).",
+        "TF32 technical facts: sign plus 8 exponent bits kept, mantissa cut 'from 23 bits to 10'; inputs, accumulation and output float32; the code comment \"'highest' = float32, 'high' = TF32, 'medium' = bfloat16\" for torch.set_float32_matmul_precision; whether the setting affects only matmuls (convolutions are a separate flag); 'Ampere or newer (RTX 30-series, A100, and later)'; 'the largest is the classifier that turns 768 channels into 50,257 vocabulary scores'.",
+        "Internal tension in the TF32 limits: 'expect 1.5–3× on a real training loop' versus the post's own 1.43x, which is below that range; 'Capped by memory bandwidth' stated as fact; 'No gain on older cards'.",
+        "bfloat16 and autocast technical facts: bfloat16 '8 exponent bits' and '7 mantissa bits'; float16 'small gradients round to zero' and needs GradScaler while bfloat16 does not; which ops autocast keeps in float32 ('Softmax, layer norm and the loss'); 'The forward pass stores activations in 16 bits' versus op-by-op choice; 'Inside the block, logits.dtype is torch.bfloat16'; the autocast listing (device_type=device needs 'cuda' not 'cuda:0'; indentation of the listing in the PDF; backward and optimizer outside the block); 'Precision is now as low as it can safely go'."
+      ]
+    },
+    {
+      "id": "S3",
+      "title": "Memory-traffic changes: torch.compile and flash attention (pages 7-11)",
+      "passages": [
+        "torch.compile: remove the interpreter, fuse the",
+        "It is a compiler for neural networks, much as GCC is a compiler for C.",
+        "Eager: one round trip to HBM per op",
+        "Fusion matters this much because of where the data lives.",
+        "1.74× from one line, the largest single gain in the loop.",
+        "Always, unless debugging. Karpathy's view is that the only price is compile",
+        "Flash attention: a fusion the compiler cannot",
+        "att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))",
+        "At T = 1024, att holds about a million numbers for every head of every",
+        "This works because of the online softmax.",
+        "10% faster, and the loss curve is unchanged apart from floating-point noise.",
+        "The bias mask buffer is no longer used."
+      ],
+      "budget": "high",
+      "why_this_budget": "torch.compile (K4) is load-bearing as the largest single gain and its causal explanation is a ledger mismatch; the flash attention account is dense with checkable technical and cited claims.",
+      "checks": [
+        "K4 (load-bearing, mismatch): 165 to 95 ms is measured, but is the attribution to kernel fusion and fewer HBM round trips isolated from interpreter-overhead removal and other compiler effects? Check the measurement protocol ('start timing from the second step', 'first step takes tens of seconds'), whether 165/95 = 1.74, and whether 'This is the cost autocast couldn't reach' is shown or asserted.",
+        "torch.compile mechanism as described: 'the network runs as a single unit with no Python in between'; 'reads the whole network before running it'; GELU formula '0.5·x·(1 + tanh(√(2/π)·(x + 0.044715·x³)))' and 'about eight small operations'; the diagram on page 8 (shows '· 0.044' while the text has 0.044715, and '8 reads + 8 writes' vs '1 read + 1 write'); whether GPT-2's GELU in this code is the tanh approximation and whether eager PyTorch really launches eight kernels for nn.GELU.",
+        "Memory hierarchy statement: 'HBM, the GPU's main memory, holds tens of gigabytes but sits off the compute chip' and 'On-chip memory (caches and registers) holds only tens of megabytes' applied to an RTX 5070, a consumer card with GDDR memory and the 8 GB stated in the setup; 'A step that goes back to HBM after every operation spends most of its time moving data'.",
+        "torch.compile advice and limits: 'Always, unless debugging'; recompilation 'whenever input shapes change'; 'On Windows it needs the triton-windows package' (consistent with the page 3 pin); the Karpathy attributions ('the only price is compile time', compile broke generation and the HellaSwag eval); listing uses GPT(config) while the config class is later named GPTconfig.",
+        "K5 flash attention: do the before and after listings compute the same thing (scale by 1/sqrt(k.size(-1)), causal mask, no dropout) and would they run as shown (variable y, q/k/v shapes)? Check 'At T = 1024, att holds about a million numbers' (1024² = 1,048,576) against the sequence length actually used for timing (not stated; config later says block_size 4096); 'Each of the four lines writes that matrix to HBM'; 'the largest temporary tensor in the step' versus the logits tensor of size T×50,257.",
+        "Flash attention facts and claims: online softmax description (running maximum and running sum); 'the paper reports up to 7.6×'; 'torch.compile can't find this'; '10% faster' for 95 to 85 ms versus 1.12x in the results table; 'the loss curve is unchanged' with no curve shown (ties to K7); 'On Ampere+ with bfloat16, PyTorch picks the flash kernel automatically'; 'Passing a custom mask instead of is_causal can drop us off the fast path'; heading says 'a fusion the compiler cannot find' while the text says it is an algorithmic rewrite."
+      ]
+    },
+    {
+      "id": "S4",
+      "title": "Vocabulary padding, results table and chart, Karpathy comparison, conclusions and references (pages 11-15)",
+      "passages": [
+        "Padding the vocabulary: Nice numbers for",
+        "50,257, GPT-2's vocabulary size, is odd, so it doesn't split into power-of-two",
+        "class GPTconfig:",
+        "The model now does slightly more work and runs 6% faster. Karpathy saw",
+        "A dimension feeds a matmul: vocab size, embedding width, hidden size,",
+        "Where the 250 ms went",
+        "The 170 ms saved splits evenly: 85 ms from the two precision changes and 85",
+        "Karpathy's A100 went from 1000 ms to 93 ms, about 11× against our 3.1×.",
+        "Getting 1.4× from TF32 instead of 8× is the diagnosis: the loop is memory",
+        "01 Is the GPU Ampere or newer? If yes, turn on TF32 and bfloat16",
+        "The optimizations and their reasoning follow Andrej Karpathy's Let's reproduce GPT-2"
+      ],
+      "budget": "high",
+      "why_this_budget": "This segment contains the quantified results that carry K1, the synthesis that restates K2 and K7 as conclusions, and the K6 mismatch, so arithmetic or inference errors here damage the headline.",
+      "checks": [
+        "K1 (load-bearing, mismatch): recompute every cell of the results table from the ms column (250/175, 175/165, 165/95, 95/85, 85/80 and the cumulative 250/165, 250/95, 250/85, 250/80) and the chart deltas (−75, −10, −70, −10, −5); check '3.13×' against '3x' in the title and '3.1×' on page 14; check the chart on page 13 of the PDF, where the caption says 'Green bars are the memory-traffic changes' but only labels and values appear to render.",
+        "K6 (mismatch): is the 85 to 80 ms gain (5 ms, single run, no variance) enough to claim 'runs 6% faster' and to attribute it to power-of-two tiling and a slower leftover pass? Check 'Karpathy saw about 30% on PyTorch 2.3.1 and earlier' and 'Newer versions handle the leftover pass better' for any support; check '50,304 is the nearest multiple of 128', 'divides by 8, 16, 32, 64 and 128', 'the 47 extra tokens', 'the thousands of real tokens that never appear in Shakespeare', and whether vocab_size sets 'the two largest matrices' given GPT-2 ties the embedding and classifier weights.",
+        "GPTconfig listing: 'block_size: int = 4096' against GPT-2's 1024 context and 'At T = 1024' on page 10; 'n_layers' naming versus nanoGPT's n_layer and the setup's '12 layers'; class name 'GPTconfig' versus 'GPT(config)' on page 8; placement of the comment '# was 50257; nearest multiple of 128' on the @dataclass line in the text layer versus the vocab_size line in the PDF; 'GPT-2 XL has 25 heads'; the from_pretrained limitation.",
+        "K2 and K7 as restated on page 14 (both load-bearing, both mismatches): 'That one number predicts the rest' and 'Making one change at a time turns each speedup into a clue' rest on a single ordering of the changes with no ablation or reordering; 'cost no accuracy we can measure' in Conclusion 01 has no measurement behind it. Check whether the '85 ms / 85 ms' split is meaningful when each gain depends on what was applied before it, and that vocabulary padding is counted as a 'memory-traffic' change here but labelled 'NICE NUMBERS' in its own section.",
+        "Karpathy comparison: '1000 ms to 93 ms, about 11×' (1000/93 = 10.75); 'His float32 baseline started much slower' on a faster card (different batch size or sequence length is not mentioned); 'the A100's roughly 2 TB/s of memory bandwidth leaves more room for each change to help' as an explanation; 'The pattern is the same on both cards' against Karpathy's actual per-step sequence.",
+        "Conclusions versus body: the title promises five lines but the conclusions give two decision rules covering four changes and omit vocabulary padding; 'If not, go straight to compile' for pre-Ampere cards; 'torch.compile is the biggest single gain available' generalised from one run (K4); references list (Dao et al. 2022, Milakov & Gimelshein 2018, Brown et al. 2020 'for the optimizer settings' when no optimizer settings appear in the post, PyTorch AMP recipe, NVIDIA A100 datasheet) matches what the body cites."
+      ]
+    },
+    {
+      "id": "global-consistency",
+      "title": "Cross-cutting consistency of numbers, names, code and claims repeated across the document",
+      "passages": [
+        "5 must-use single-line exploits that made the smallest GPT-2 (124M",
+        "Milliseconds per training step on an RTX 5070, measured after each change",
+        "Hardware: one RTX 5070 (8 GB). Windows, PyTorch 2.x. Windows needs",
+        "250 → 175 ms",
+        "175 → 165 ms",
+        "165 → 95 ms",
+        "95 → 85 ms",
+        "85 → 80 ms",
+        "CHANGE             MS / STEP     VS PREVIOUS  VS BASELINE",
+        "The 170 ms saved splits evenly: 85 ms from the two precision changes and 85",
+        "Getting 1.4× from TF32 instead of 8× is the diagnosis: the loop is memory",
+        "All timings are from our own notebook on a"
+      ],
+      "budget": "high",
+      "why_this_budget": "The headline number K1 is assembled from figures repeated in the title, TL;DR ladder, five MEASURED boxes, results table, chart and conclusions, and a disagreement between any two of them discredits the result.",
+      "checks": [
+        "K1: the six step times (250, 175, 165, 95, 85, 80 ms) agree everywhere they appear: TL;DR ladder (page 2), each MEASURED box, results table and chart (page 13), and prose on page 14 ('170 ms saved', '70 ms'); '~250 ms' versus '250 ms'; '3x' (title, subtitle, TL;DR) versus '3.13×' versus '3.1×'.",
+        "Speedup and percentage wording for the same step agrees across sections: TF32 '1.43×' versus '1.4×'; autocast 'Only 6%' versus '1.06×'; flash attention '10% faster' versus '1.12×'; vocab '6% faster' versus '1.06×'; and whether percentages are consistently time reduction or throughput gain.",
+        "K2, K3, K4 causal story is told the same way each time: 'memory bound' on page 4, 'Capped by memory bandwidth' on page 5, 'the bottleneck is now the number of memory round trips' on page 6, the HBM account on page 8 and the page 14 synthesis; check that bytes moved (bandwidth) and number of trips (launch overhead) are not used interchangeably as the same bottleneck.",
+        "K7: accuracy statements agree across sections: 'costs no accuracy we can measure' (page 4), 'slightly less exact' (page 4), 'Less precise than float32 ... train a little longer' (page 6), 'loss curve is unchanged' (page 10), 'Nothing breaks' (page 11), 'cost no accuracy we can measure' (page 14), 'on-par performance' (page 1).",
+        "Code listings of the same thing agree: baseline 'model(x, y)' (page 2) versus 'model(x.to(device), y.to(device))' (pages 3, 6); 'vocab_size: int = 50304 # was 50257' (page 2) versus the GPTconfig listing (page 12); 'GPT(config)' versus 'GPTconfig'; 'n_layers'/'n_head'; 'block_size: int = 4096' versus 'T = 1024'; TL;DR one-liners identical to the body one-liners.",
+        "Hardware, model and scope statements agree: 'RTX 5070 (8 GB)' and 'consumer-grade RTX 5070' versus 'HBM ... holds tens of gigabytes'; 'Ampere or newer' wording in each USE IT WHEN box and in the conclusions; '124M', '12 layers, 12 heads, 768'; vocabulary '50,257'/'50257' and '50,304'/'50304'; count of changes ('5 lines', 'five one-line changes', 'two precision changes' plus 'three memory-traffic changes') versus the section labels PRECISION, MEMORY TRAFFIC and NICE NUMBERS."
+      ]
+    },
+    {
+      "id": "copy-consistency",
+      "title": "Copy and style consistency across the whole document",
+      "passages": [
+        "5 Lines of Code to Make Your LLM",
+        "LLMs are hard to train, primarily due to the compute involved. However we can",
+        "These modfications and simple yet powerful exploits to fully utilize the",
+        "We apply five one-line changes to a 124M parameter GPT-2 Model's",
+        "Every tensor in this loop i.e. weights, activations, gradients — is float32.",
+        "4 · Flash attention",
+        "Padding the vocabulary: Nice numbers for",
+        "R E S U LT S",
+        "Conclusions",
+        "References:"
+      ],
+      "budget": "medium",
+      "why_this_budget": "Whole-document surface check with no load-bearing claims, but typos and inconsistent naming in the TL;DR and headings affect credibility with a practitioner audience.",
+      "checks": [
+        "Spelling and grammar in the TL;DR and baseline: 'modfications'; 'These modfications and simple yet powerful exploits to fully utilize' (sentence structure); 'However we can' (comma); 'with same compute budget'; 'how GPU works' (article); 'on a single RTX 5070 making training 3x faster' (missing comma and full stop); 'i.e. weights, activations, gradients — is float32' (mismatched punctuation pair).",
+        "Capitalisation of terms and proper nouns: 'GPT-2 Model's' versus 'model'; 'Flash attention'/'flash attention'/'FlashAttention'; 'Nice numbers for CUDA' capital after the colon versus lower case after the colon in other section titles; 'GPTconfig' versus the usual 'GPTConfig'; 'Hugging Face', 'HellaSwag', 'PyTorch', 'Tiny Shakespeare'; table row 'Flash attention' versus chart label 'flash attention'.",
+        "Number and unit formats: '3x' versus '3.13×' (letter x versus multiplication sign); '50,257' versus '50257' and '50,304' versus '50304' in prose, table and chart; 'ms' spacing; 'TB/s', 'TFLOPS', '8 GB'; '1.5–3×' range dash; '5' versus 'five' and '5 must-use single-line exploits' versus 'five one-line changes'; 'Ampere or newer' versus 'Ampere+'.",
+        "Hyphenation and compound terms: 'single-line'/'one-line'/'one line'; 'element-wise'; 'on-par'; 'memory bound' versus 'memory-traffic'; 'op by op'; 'lower-precision'; 'power-of-two'; 'consumer-grade'; 'well-tuned'; 'matmul'/'Matmul'/'matrix multiplication'/'matrix multiplies' used for the same thing.",
+        "Parallelism and voice across the repeated section template (lead sentence, MEASURED, USE IT WHEN, LIMITATIONS, GLOSSARY): USE IT WHEN bullets mix conditions ('The GPU is Ampere or newer') with instructions ('Let autocast decide'); consistent 'we'/'our' versus 'your' in the title; tense of measured results; glossary terms defined before or after first use ('HBM', 'kernel', 'tensor core', 'T', 'eager', 'boundary kernel' appears only in the glossary).",
+        "Headers, labels and layout: section kicker and number format ('OPTIMIZATION 1 · PRECISION 03'); 'THE TAKEAWAY FIRST'; code-box captions ('one line · python', 'GPTconfig · python', 'before'/'after' with an em dash); 'triton -> pip install' arrow and stray space before the full stop; 'References:' colon versus other headings; reference entry style (authors, year, title) and that 'Let's reproduce GPT-2 (124M)' and 'build-nanogpt' are identified as a video and a repository; code indentation lost in the page 6 and page 12 listings in the text layer."
+      ]
+    }
+  ],
+  "external_checks": [
+    "NVIDIA RTX 5070 memory size: the post says '(8 GB)'; confirm against NVIDIA's specification for the desktop RTX 5070 and the laptop RTX 5070, and whether its memory is GDDR rather than HBM.",
+    "NVIDIA A100 datasheet: 19.5 TFLOPS peak FP32 and 156 TFLOPS peak TF32 (tensor cores), and memory bandwidth 'roughly 2 TB/s' (differs between the 40 GB and 80 GB models).",
+    "TF32 format: 1 sign bit, 8 exponent bits, 10 mantissa bits; available on Ampere and newer (RTX 30-series, A100); bfloat16 format: 8 exponent bits, 7 mantissa bits.",
+    "PyTorch documentation for torch.set_float32_matmul_precision: what 'highest', 'high' and 'medium' do (in particular whether 'medium' means bfloat16) and which operations the setting covers.",
+    "PyTorch autocast documentation: which CUDA ops run in the lower precision and which autocast to float32 (softmax, layer_norm, cross-entropy loss), whether GradScaler is needed for bfloat16, and the valid values of device_type.",
+    "PyTorch F.scaled_dot_product_attention: conditions under which the FlashAttention kernel is selected (GPU generation, dtype, is_causal versus attn_mask) and behaviour of the default scale.",
+    "torch.compile on Windows: whether the triton-windows package is required and whether the pin 'triton-windows>=3.8,<3.9' is a real and appropriate version range for current PyTorch 2.x.",
+    "Dao et al. (2022), FlashAttention: the 'up to 7.6×' figure and what it measures (attention computation on GPT-2, not end-to-end training); authors, year and title.",
+    "Milakov & Gimelshein (2018), 'Online normalizer calculation for softmax': authors, year, title, and that it describes the running-maximum and running-sum method.",
+    "Brown et al. (2020), 'Language Models are Few-Shot Learners': citation correct and whether it is the source of the optimizer settings used in Karpathy's run.",
+    "Andrej Karpathy, 'Let's reproduce GPT-2 (124M)' video and build-nanogpt repository: A100 step times (about 1000 ms baseline to about 93 ms), the per-step sequence for TF32, autocast, torch.compile, flash attention and vocab 50304, his batch size and sequence length, the size of the gain he reported for vocab padding (the post says 'about 30%' on PyTorch 2.3.1 and earlier), the statement that tensor cores are rarely busy more than about 60% of the time, and that torch.compile broke generation and the HellaSwag eval.",
+    "GPT-2 facts: 124M parameters with 12 layers, 12 heads, 768 embedding width; vocabulary 50,257; context length 1024; token embedding and output classifier weights are tied; tanh-approximation GELU with constant 0.044715; GPT-2 XL has 25 heads.",
+    "Tiny Shakespeare dataset: about 1M (1.1M) characters and about 338k GPT-2 BPE tokens.",
+    "Hugging Face GPT-2 checkpoint: embedding has 50,257 rows, so loading into a 50,304-row model fails without resizing."
+  ]
+}
